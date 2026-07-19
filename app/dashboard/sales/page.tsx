@@ -34,7 +34,8 @@ async function getData() {
     })),
     products: products.map((p) => ({ id: p.id, name: p.name, sku: p.sku, price: Number(p.price) })),
     warehouses: warehouses.map((w) => ({ id: w.id, name: w.name })),
-    customers: customers.map((c) => ({ id: c.id, name: c.name })),
+    customers: customers.map((c) => ({ id: c.id, name: c.name, phone: c.phone })),
+    allCustomers: customers.map((c) => ({ id: c.id, name: c.name, phone: c.phone })),
   }
 }
 
@@ -51,6 +52,7 @@ export default async function SalesPage() {
       warehouses={data.warehouses}
       customers={data.customers}
       userRole={session.user.role}
+      allCustomers={data.allCustomers}
     />
   )
 }

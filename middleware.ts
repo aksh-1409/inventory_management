@@ -53,7 +53,12 @@ export default auth(async function middleware(req: NextRequest & { auth: any }) 
   if (pathname.startsWith('/dashboard') || pathname.startsWith('/api/v1')) {
     // Public: warehouses GET (needed for signup)
     const isPublicWarehousesGet = pathname === '/api/v1/warehouses' && req.method === 'GET'
-    if (!isPublicWarehousesGet && !session) {
+
+    // API key auth: allow Bearer token to bypass session check for API routes
+    const isApiRoute = pathname.startsWith('/api/v1')
+    const hasBearerToken = isApiRoute && req.headers.get('authorization')?.startsWith('Bearer sp_live_')
+
+    if (!isPublicWarehousesGet && !hasBearerToken && !session) {
       const loginUrl = new URL('/auth/login', req.url)
       loginUrl.searchParams.set('callbackUrl', pathname)
       return applySecurityHeaders(NextResponse.redirect(loginUrl))

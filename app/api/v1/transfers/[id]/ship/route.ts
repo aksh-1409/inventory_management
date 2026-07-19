@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { auth } from '@/lib/auth'
+import { requireAuth } from '@/lib/api-auth'
 import { z } from 'zod'
 
 const shipSchema = z.object({
@@ -12,10 +12,11 @@ export async function POST(
   ctx: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth()
-    if (!session?.user) {
+    const authResult = await requireAuth(req)
+    if (!authResult) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    const { user } = authResult
 
     const { id } = await ctx.params
     const body = await req.json()
@@ -30,7 +31,7 @@ export async function POST(
     }
 
     // Only source warehouse (or admin) can ship
-    if (session.user.role === 'OPERATOR' && session.user.warehouseId !== existing.fromWarehouseId) {
+    if (user.role === 'OPERATOR' && user.warehouseId !== existing.fromWarehouseId) {
       return NextResponse.json({ error: 'Only the source warehouse can ship this transfer' }, { status: 403 })
     }
 

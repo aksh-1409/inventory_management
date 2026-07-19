@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { auth } from '@/lib/auth'
+import { requireAuth } from '@/lib/api-auth'
 import { z } from 'zod'
 
 const receiveSchema = z.object({
@@ -14,10 +14,11 @@ export async function POST(
   ctx: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth()
-    if (!session?.user) {
+    const authResult = await requireAuth(req)
+    if (!authResult) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    const { user } = authResult
 
     const { id } = await ctx.params
     const body = await req.json()
@@ -34,7 +35,7 @@ export async function POST(
     }
 
     // Only destination warehouse (or admin) can receive
-    if (session.user.role === 'OPERATOR' && session.user.warehouseId !== existing.toWarehouseId) {
+    if (user.role === 'OPERATOR' && user.warehouseId !== existing.toWarehouseId) {
       return NextResponse.json({ error: 'Only the destination warehouse can receive this transfer' }, { status: 403 })
     }
 
@@ -100,7 +101,7 @@ export async function POST(
           type: 'TRANSFER_IN',
           delta: quantityReceived,
           reference: `Transfer received${damagedQuantity > 0 ? ` (${damagedQuantity} damaged)` : ''}`,
-          userId: session.user.id,
+          userId: user.id,
         },
       }),
     ]
@@ -118,7 +119,7 @@ export async function POST(
             type: 'DAMAGE',
             delta: -damagedQuantity,
             reference: `Damaged in transfer ${id}`,
-            userId: session.user.id,
+            userId: user.id,
           },
         }),
       )

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { auth } from '@/lib/auth'
+import { requireAuth } from '@/lib/api-auth'
 import { z } from 'zod'
 
 const warehouseSchema = z.object({
@@ -28,11 +28,12 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth()
-    if (!session?.user) {
+    const authResult = await requireAuth(req)
+    if (!authResult) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-    if (session.user.role !== 'ADMIN') {
+    const { user } = authResult
+    if (user.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Forbidden: Admin access required' }, { status: 403 })
     }
 

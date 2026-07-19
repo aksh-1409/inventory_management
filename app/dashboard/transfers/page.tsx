@@ -35,11 +35,31 @@ async function getData(userRole: string, userWarehouseId: string | null) {
     }),
   ])
 
+  // Fetch damage counts for completed transfers
+  const completedTransferIds = transfers.filter(t => t.status === 'COMPLETED').map(t => t.id)
+  const damageTxns = completedTransferIds.length > 0 ? await prisma.inventoryTransaction.findMany({
+    where: {
+      type: 'DAMAGE',
+      reference: { contains: 'Damaged in transfer' },
+    },
+    include: { inventoryItem: { select: { warehouseId: true, productId: true } } },
+  }) : []
+
+  const damageMap = new Map<string, number>()
+  for (const tx of damageTxns) {
+    if (!tx.reference) continue
+    const match = tx.reference.match(/Damaged in transfer (.+)/)
+    if (match) {
+      damageMap.set(match[1], Math.abs(tx.delta))
+    }
+  }
+
   return {
     transfers: transfers.map((t) => ({
       id: t.id,
       quantityInitiated: t.quantityInitiated,
       quantityReceived: t.quantityReceived,
+      damagedQuantity: damageMap.get(t.id) || 0,
       status: t.status,
       trackingNumber: t.trackingNumber,
       notes: t.notes,

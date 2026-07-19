@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { auth } from '@/lib/auth'
+import { requireAuth } from '@/lib/api-auth'
 import { z } from 'zod'
 
 const adjustmentSchema = z.object({
@@ -9,12 +9,13 @@ const adjustmentSchema = z.object({
   reason: z.string().min(1, 'Reason is required'),
 })
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const session = await auth()
-    if (!session?.user) {
+    const authResult = await requireAuth(req)
+    if (!authResult) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    const { user } = authResult
 
     const items = await prisma.inventoryItem.findMany({
       where: { product: { deletedAt: null } },
@@ -51,11 +52,12 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth()
-    if (!session?.user) {
+    const authResult = await requireAuth(req)
+    if (!authResult) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-    if (session.user.role !== 'ADMIN') {
+    const { user } = authResult
+    if (user.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Forbidden: Admin access required' }, { status: 403 })
     }
 
@@ -85,7 +87,7 @@ export async function POST(req: NextRequest) {
           type: 'ADJUSTMENT',
           delta,
           reference: `Adjustment: ${reason}`,
-          userId: session.user.id,
+          userId: user.id,
         },
       }),
     ])

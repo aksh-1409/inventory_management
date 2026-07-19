@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { auth } from '@/lib/auth'
+import { requireAuth } from '@/lib/api-auth'
 import { z } from 'zod'
 
 const customerSchema = z.object({
@@ -9,12 +9,13 @@ const customerSchema = z.object({
   phone: z.string().min(1, 'Phone is required'),
 })
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const session = await auth()
-    if (!session?.user) {
+    const authResult = await requireAuth(req)
+    if (!authResult) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    const { user } = authResult
 
     const customers = await prisma.customer.findMany({ orderBy: { name: 'asc' } })
     return NextResponse.json({ customers })
@@ -26,10 +27,11 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth()
-    if (!session?.user) {
+    const authResult = await requireAuth(req)
+    if (!authResult) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    const { user } = authResult
 
     const body = await req.json()
     const result = customerSchema.safeParse(body)

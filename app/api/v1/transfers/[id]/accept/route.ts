@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { auth } from '@/lib/auth'
+import { requireAuth } from '@/lib/api-auth'
 import { z } from 'zod'
 
 const acceptSchema = z.object({
@@ -12,10 +12,11 @@ export async function POST(
   ctx: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth()
-    if (!session?.user) {
+    const authResult = await requireAuth(req)
+    if (!authResult) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    const { user } = authResult
 
     const { id } = await ctx.params
     const body = await req.json()
@@ -27,7 +28,7 @@ export async function POST(
     const { fromWarehouseId } = result.data
 
     // Operators can only accept requests where the source is their warehouse
-    if (session.user.role === 'OPERATOR' && session.user.warehouseId !== fromWarehouseId) {
+    if (user.role === 'OPERATOR' && user.warehouseId !== fromWarehouseId) {
       return NextResponse.json({ error: 'You can only accept requests from your assigned warehouse' }, { status: 403 })
     }
 
@@ -80,7 +81,7 @@ export async function POST(
           type: 'TRANSFER_OUT',
           delta: -existing.quantityInitiated,
           reference: `Transfer accepted — shipping to ${existing.toWarehouseId}`,
-          userId: session.user.id,
+          userId: user.id,
         },
       }),
     ])

@@ -11,6 +11,7 @@ interface Transfer {
   id: string
   quantityInitiated: number
   quantityReceived: number
+  damagedQuantity: number
   status: string
   trackingNumber: string | null
   notes: string | null
@@ -120,6 +121,7 @@ export default function TransfersClient({ initialTransfers, products, warehouses
         id: t.id,
         quantityInitiated: t.quantityInitiated,
         quantityReceived: 0,
+        damagedQuantity: 0,
         status: 'REQUESTED',
         trackingNumber: null,
         notes: t.notes || null,
@@ -227,7 +229,7 @@ export default function TransfersClient({ initialTransfers, products, warehouses
       if (!res.ok) throw new Error(data.error)
 
       setTransfers((prev) => prev.map((t) =>
-        t.id === id ? { ...t, status: 'COMPLETED', quantityReceived: qtyReceived, receivedAt: data.transfer.receivedAt } : t
+        t.id === id ? { ...t, status: 'COMPLETED', quantityReceived: qtyReceived, damagedQuantity: damaged, receivedAt: data.transfer.receivedAt } : t
       ))
       showToast('Transfer received')
       setShowReceiveModal(null)
@@ -364,7 +366,8 @@ export default function TransfersClient({ initialTransfers, products, warehouses
                       <ReceivingReportDownload transfer={{
                         id: t.id, product: t.product, fromWarehouse: t.fromWarehouse,
                         toWarehouse: t.toWarehouse, quantityInitiated: t.quantityInitiated,
-                        quantityReceived: t.quantityReceived, receivedAt: t.receivedAt, notes: t.notes,
+                        quantityReceived: t.quantityReceived, damagedQuantity: t.damagedQuantity,
+                        receivedAt: t.receivedAt, notes: t.notes,
                       }} />
                     )}
                     {canFulfill && (

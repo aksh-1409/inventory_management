@@ -76,13 +76,11 @@ export default function SuppliersClient({ initialSuppliers, userRole }: Props) {
           <h1 style={{ fontSize: 24, fontWeight: 600, color: 'var(--text-heading)' }}>Suppliers</h1>
           <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>{suppliers.length} suppliers</p>
         </div>
-        {isAdmin && (
-          <button onClick={openCreate} className="btn btn-primary" style={{ gap: 8 }}><Plus style={{ width: 16, height: 16 }} />Add Supplier</button>
-        )}
+        <button onClick={openCreate} className="btn btn-primary" style={{ gap: 8 }}><Plus style={{ width: 16, height: 16 }} />Add Supplier</button>
       </div>
 
       {suppliers.length === 0 ? (
-        <EmptyState icon={Truck} title="No suppliers yet" description="Add your first supplier to track who sends your inventory." actionLabel={isAdmin ? 'Add Supplier' : undefined} onAction={isAdmin ? openCreate : undefined} />
+        <EmptyState icon={Truck} title="No suppliers yet" description="Add your first supplier to track who sends your inventory." actionLabel="Add Supplier" onAction={openCreate} />
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
           {suppliers.map((s) => (
@@ -92,7 +90,7 @@ export default function SuppliersClient({ initialSuppliers, userRole }: Props) {
                   <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-heading)', marginBottom: 2 }}>{s.name}</h3>
                   {s.contactName && <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>{s.contactName}</p>}
                 </div>
-                {isAdmin && (
+                  {isAdmin && (
                   <div style={{ display: 'flex', gap: 4 }}>
                     <button onClick={() => openEdit(s)} className="btn btn-ghost" style={{ padding: 6, minHeight: 'auto', minWidth: 'auto' }}><Pencil style={{ width: 14, height: 14 }} /></button>
                     {deleteConfirm === s.id ? (

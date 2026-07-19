@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { auth } from '@/lib/auth'
+import { requireAuth } from '@/lib/api-auth'
 import { z } from 'zod'
 
 const receiveSchema = z.object({
@@ -14,10 +14,11 @@ const receiveSchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth()
-    if (!session?.user) {
+    const authResult = await requireAuth(req)
+    if (!authResult) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    const { user } = authResult
 
     const body = await req.json()
     const result = receiveSchema.safeParse(body)
@@ -63,7 +64,7 @@ export async function POST(req: NextRequest) {
           type: 'IN',
           delta: quantity,
           reference: notes || `Received from ${supplier.name}`,
-          userId: session.user.id,
+          userId: user.id,
         },
       }),
     ])
@@ -78,6 +79,9 @@ export async function POST(req: NextRequest) {
         unitCost: unitCost || null,
         total: unitCost ? quantity * unitCost : null,
         createdAt: transaction.createdAt.toISOString(),
+        product: { id: product.id, name: product.name, sku: product.sku },
+        warehouse: { id: warehouse.id, name: warehouse.name },
+        supplier: { id: supplier.id, name: supplier.name },
       },
       newStock: updatedItem.quantity,
     }, { status: 201 })

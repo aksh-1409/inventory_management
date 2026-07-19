@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { auth } from '@/lib/auth'
+import { requireAuth } from '@/lib/api-auth'
 import { z } from 'zod'
 
 const requestSchema = z.object({
@@ -10,12 +10,13 @@ const requestSchema = z.object({
   notes: z.string().optional(),
 })
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const session = await auth()
-    if (!session?.user) {
+    const authResult = await requireAuth(req)
+    if (!authResult) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    const { user } = authResult
 
     const transfers = await prisma.transfer.findMany({
       include: {
@@ -37,10 +38,11 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth()
-    if (!session?.user) {
+    const authResult = await requireAuth(req)
+    if (!authResult) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    const { user } = authResult
 
     const body = await req.json()
     console.log('[TRANSFER_POST_BODY]', JSON.stringify(body))
@@ -53,7 +55,7 @@ export async function POST(req: NextRequest) {
     const { productId, toWarehouseId, quantity, notes } = result.data
 
     // Operators can only request to their own warehouse
-    if (session.user.role === 'OPERATOR' && session.user.warehouseId !== toWarehouseId) {
+    if (user.role === 'OPERATOR' && user.warehouseId !== toWarehouseId) {
       return NextResponse.json({ error: 'You can only request transfers to your assigned warehouse' }, { status: 403 })
     }
 
@@ -65,7 +67,7 @@ export async function POST(req: NextRequest) {
         toWarehouseId,
         quantityInitiated: quantity,
         status: 'REQUESTED',
-        initiatedById: session.user.id,
+        initiatedById: user.id,
         notes: notes || null,
       },
       include: {

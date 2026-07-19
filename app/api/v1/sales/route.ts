@@ -1,25 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { auth } from '@/lib/auth'
+import { requireAuth } from '@/lib/api-auth'
 import { z } from 'zod'
 
 const saleSchema = z.object({
   productId: z.string().min(1),
   warehouseId: z.string().min(1),
   customerId: z.string().min(1),
-  quantity: z.number().int().positive(),
-  unitPrice: z.number().positive(),
+  quantity: z.coerce.number().int().positive(),
+  unitPrice: z.coerce.number().positive(),
   notes: z.string().optional(),
 })
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth()
-    if (!session?.user) {
+    const authResult = await requireAuth(req)
+    if (!authResult) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    const { user } = authResult
 
     const body = await req.json()
+    console.log('[SALE_POST_BODY]', JSON.stringify(body))
     const result = saleSchema.safeParse(body)
     if (!result.success) {
       return NextResponse.json({ error: result.error.issues[0].message }, { status: 400 })
@@ -61,9 +63,16 @@ export async function POST(req: NextRequest) {
           type: 'OUT',
           delta: -quantity,
           reference: notes || `Sale to customer`,
-          userId: session.user.id,
+          userId: user.id,
         },
       }),
+    ])
+
+    // Fetch related names for response
+    const [product, warehouse, customer] = await Promise.all([
+      prisma.product.findUnique({ where: { id: productId } }),
+      prisma.warehouse.findUnique({ where: { id: warehouseId } }),
+      prisma.customer.findUnique({ where: { id: customerId } }),
     ])
 
     return NextResponse.json({
@@ -76,6 +85,9 @@ export async function POST(req: NextRequest) {
         unitPrice,
         total: quantity * unitPrice,
         createdAt: transaction.createdAt.toISOString(),
+        product: product ? { id: product.id, name: product.name, sku: product.sku } : null,
+        warehouse: warehouse ? { id: warehouse.id, name: warehouse.name } : null,
+        customer: customer ? { id: customer.id, name: customer.name, email: customer.email, phone: customer.phone } : null,
       },
       remainingStock: updatedItem.quantity,
     }, { status: 201 })

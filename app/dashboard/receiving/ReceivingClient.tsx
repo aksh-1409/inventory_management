@@ -5,6 +5,7 @@ import { Truck, Plus, Search, X, Loader2 } from 'lucide-react'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { useToast } from '@/components/ui/Toast'
 import { CustomSelect } from '@/components/ui/CustomSelect'
+import { ReceivingReportDownload } from '@/components/pdf/TransferPDFs'
 
 interface Receipt {
   id: string
@@ -13,6 +14,9 @@ interface Receipt {
   createdAt: string
   product: { id: string; name: string; sku: string }
   warehouse: { id: string; name: string }
+  unitCost?: number | null
+  totalCost?: number | null
+  supplier?: { id: string; name: string } | null
 }
 
 interface Product { id: string; name: string; sku: string }
@@ -71,13 +75,19 @@ export default function ReceivingClient({ initialReceipts, products, warehouses,
 
       const product = products.find((p) => p.id === form.productId)!
       const warehouse = warehouses.find((w) => w.id === form.warehouseId)!
+      const supplier = suppliers.find((s) => s.id === form.supplierId)
+      const qty = parseInt(form.quantity)
+      const uc = form.unitCost ? parseFloat(form.unitCost) : null
       setReceipts((prev) => [{
         id: data.receipt.id,
-        delta: parseInt(form.quantity),
+        delta: qty,
         reference: form.notes || `Received from supplier`,
         createdAt: data.receipt.createdAt,
         product: { id: product.id, name: product.name, sku: product.sku },
         warehouse: { id: warehouse.id, name: warehouse.name },
+        unitCost: uc,
+        totalCost: uc ? qty * uc : null,
+        supplier: supplier ? { id: supplier.id, name: supplier.name } : null,
       }, ...prev])
       showToast(`Received ${parseInt(form.quantity)} units`)
       setShowModal(false)
@@ -119,8 +129,10 @@ export default function ReceivingClient({ initialReceipts, products, warehouses,
             <table className="responsive-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                  {['Product', 'SKU', 'Warehouse', 'Qty', 'Date', 'Reference'].map((h) => (
-                    <th key={h} style={{ padding: '16px 24px', textAlign: h === 'Qty' ? 'center' : 'left', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
+                  {['Product', 'SKU', 'Warehouse', 'Qty', 'Date', 'Reference', 'PDF'].map((h) => (
+                    <th key={h} style={{ padding: '16px 24px', textAlign: h === 'Qty' ? 'center' : 'left', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      {h}
+                    </th>
                   ))}
                 </tr>
               </thead>
@@ -144,6 +156,21 @@ export default function ReceivingClient({ initialReceipts, products, warehouses,
                     </td>
                     <td data-label="Reference" style={{ padding: '16px 24px' }}>
                       <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{r.reference || '-'}</span>
+                    </td>
+                    <td data-label="PDF" style={{ padding: '16px 24px' }}>
+                      <ReceivingReportDownload transfer={{
+                        id: r.id,
+                        product: r.product,
+                        fromWarehouse: { name: r.supplier?.name || 'Supplier' },
+                        toWarehouse: r.warehouse,
+                        quantityInitiated: r.delta,
+                        quantityReceived: r.delta,
+                        damagedQuantity: 0,
+                        unitCost: r.unitCost ?? null,
+                        totalCost: r.totalCost ?? null,
+                        receivedAt: r.createdAt,
+                        notes: r.reference,
+                      }} />
                     </td>
                   </tr>
                 ))}
