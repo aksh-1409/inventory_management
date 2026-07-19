@@ -8,6 +8,7 @@ import { useToast } from '@/components/ui/Toast'
 interface InventoryItem {
   id: string
   quantity: number
+  damaged: number
   productId: string
   warehouseId: string
   product: { id: string; sku: string; name: string; reorderPoint: number }
@@ -136,6 +137,7 @@ export default function InventoryClient({ initialItems, userRole }: Props) {
                   <th style={{ padding: '16px 24px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Product</th>
                   <th style={{ padding: '16px 24px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Warehouse</th>
                   <th style={{ padding: '16px 24px', textAlign: 'center', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Stock</th>
+                  <th style={{ padding: '16px 24px', textAlign: 'center', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Damaged</th>
                   <th style={{ padding: '16px 24px', textAlign: 'center', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Reorder At</th>
                   <th style={{ padding: '16px 24px', textAlign: 'center', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status</th>
                   {isAdmin && <th style={{ padding: '16px 24px', textAlign: 'center', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Adjust</th>}
@@ -160,6 +162,13 @@ export default function InventoryClient({ initialItems, userRole }: Props) {
                       </td>
                       <td data-label="Stock" style={{ padding: '16px 24px', textAlign: 'center' }}>
                         <span className="tabular" style={{ fontSize: 20, fontWeight: 600, color }}>{item.quantity}</span>
+                      </td>
+                      <td data-label="Damaged" style={{ padding: '16px 24px', textAlign: 'center' }}>
+                        {item.damaged > 0 ? (
+                          <span className="tabular" style={{ fontSize: 14, fontWeight: 500, color: 'var(--danger)' }}>{item.damaged}</span>
+                        ) : (
+                          <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>-</span>
+                        )}
                       </td>
                       <td data-label="Reorder At" style={{ padding: '16px 24px', textAlign: 'center' }}>
                         <span className="tabular" style={{ fontSize: 14, color: 'var(--text-muted)' }}>{item.product.reorderPoint}</span>

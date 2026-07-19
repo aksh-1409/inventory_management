@@ -42,32 +42,35 @@ const STATUS_CONFIG: Record<string, { color: string; bg: string }> = {
   CANCELLED: { color: 'var(--text-muted)', bg: 'rgba(255,255,255,0.04)' },
 }
 
-type Tab = 'requests' | 'my-transfers' | 'accept'
+type Tab = 'incoming' | 'fulfill' | 'all'
 
 export default function TransfersClient({ initialTransfers, products, warehouses, userRole, userWarehouseId }: Props) {
   const { showToast } = useToast()
   const [transfers, setTransfers] = useState<Transfer[]>(initialTransfers)
-  const [tab, setTab] = useState<Tab>('requests')
+  const [tab, setTab] = useState<Tab>('incoming')
   const [search, setSearch] = useState('')
   const [showRequestModal, setShowRequestModal] = useState(false)
   const [showAcceptModal, setShowAcceptModal] = useState<string | null>(null)
   const [showReceiveModal, setShowReceiveModal] = useState<string | null>(null)
+  const [showShipModal, setShowShipModal] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
-  const [requestForm, setRequestForm] = useState({ productId: '', toWarehouseId: '', quantity: '', notes: '' })
+  const [requestForm, setRequestForm] = useState({ productId: '', quantity: '', notes: '' })
   const [acceptForm, setAcceptForm] = useState({ fromWarehouseId: '' })
   const [receiveForm, setReceiveForm] = useState({ quantityReceived: '', damagedQuantity: '0', notes: '' })
+  const [shipForm, setShipForm] = useState({ trackingNumber: '' })
 
   const isAdmin = userRole === 'ADMIN'
+  const userWarehouseName = warehouses.find(w => w.id === userWarehouseId)?.name || ''
 
   const filtered = useMemo(() => {
     let list = transfers
-    if (tab === 'requests') {
-      list = transfers.filter((t) => t.status === 'REQUESTED')
-    } else if (tab === 'my-transfers') {
-      list = transfers.filter((t) => t.status !== 'REQUESTED')
-    } else if (tab === 'accept') {
+    if (tab === 'incoming') {
+      list = transfers.filter((t) => t.status === 'REQUESTED' && (isAdmin || t.toWarehouse.id === userWarehouseId))
+    } else if (tab === 'fulfill') {
       list = transfers.filter((t) => t.status === 'REQUESTED' && t.toWarehouse.id !== userWarehouseId)
+    } else {
+      list = transfers.filter((t) => t.status !== 'REQUESTED')
     }
 
     if (search) {
@@ -78,27 +81,36 @@ export default function TransfersClient({ initialTransfers, products, warehouses
       )
     }
     return list
-  }, [transfers, tab, search, userWarehouseId])
+  }, [transfers, tab, search, userWarehouseId, isAdmin])
 
   async function handleRequest(e: React.FormEvent) {
     e.preventDefault()
-    if (!requestForm.productId || !requestForm.toWarehouseId) {
-      showToast('Please select both product and warehouse', 'error')
+    if (!requestForm.productId) {
+      showToast('Please select a product', 'error')
       return
     }
+    const qty = parseInt(requestForm.quantity)
+    if (!qty || qty < 1) {
+      showToast('Please enter a valid quantity', 'error')
+      return
+    }
+    const destinationId = isAdmin ? warehouses[0]?.id : userWarehouseId
+    if (!destinationId) {
+      showToast('No warehouse assigned', 'error')
+      return
+    }
+
     setLoading(true)
     try {
-      const payload = {
-        productId: requestForm.productId,
-        toWarehouseId: requestForm.toWarehouseId,
-        quantity: parseInt(requestForm.quantity),
-        notes: requestForm.notes || undefined,
-      }
-      console.log('[TRANSFER_REQUEST]', JSON.stringify(payload))
       const res = await fetch('/api/v1/transfers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          productId: requestForm.productId,
+          toWarehouseId: destinationId,
+          quantity: qty,
+          notes: requestForm.notes || undefined,
+        }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
@@ -108,9 +120,9 @@ export default function TransfersClient({ initialTransfers, products, warehouses
         id: t.id,
         quantityInitiated: t.quantityInitiated,
         quantityReceived: 0,
-        status: t.status,
+        status: 'REQUESTED',
         trackingNumber: null,
-        notes: t.notes,
+        notes: t.notes || null,
         shippedAt: null,
         receivedAt: null,
         createdAt: t.createdAt,
@@ -121,7 +133,7 @@ export default function TransfersClient({ initialTransfers, products, warehouses
       }, ...prev])
       showToast('Transfer request created')
       setShowRequestModal(false)
-      setRequestForm({ productId: '', toWarehouseId: '', quantity: '', notes: '' })
+      setRequestForm({ productId: '', quantity: '', notes: '' })
     } catch (err: any) {
       showToast(err.message || 'Failed to create request', 'error')
     } finally {
@@ -130,12 +142,18 @@ export default function TransfersClient({ initialTransfers, products, warehouses
   }
 
   async function handleAccept(transferId: string) {
+    const sourceId = isAdmin ? acceptForm.fromWarehouseId : userWarehouseId
+    if (!sourceId) {
+      showToast('No warehouse assigned', 'error')
+      return
+    }
+
     setLoading(true)
     try {
       const res = await fetch(`/api/v1/transfers/${transferId}/accept`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fromWarehouseId: acceptForm.fromWarehouseId }),
+        body: JSON.stringify({ fromWarehouseId: sourceId }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
@@ -148,7 +166,7 @@ export default function TransfersClient({ initialTransfers, products, warehouses
           fromWarehouse: { id: t.fromWarehouse.id, name: t.fromWarehouse.name },
         } : tr
       ))
-      showToast('Transfer accepted — stock deducted from your warehouse')
+      showToast('Transfer accepted — stock deducted')
       setShowAcceptModal(null)
       setAcceptForm({ fromWarehouseId: '' })
     } catch (err: any) {
@@ -164,15 +182,17 @@ export default function TransfersClient({ initialTransfers, products, warehouses
       const res = await fetch(`/api/v1/transfers/${id}/ship`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
+        body: JSON.stringify({ trackingNumber: shipForm.trackingNumber || undefined }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
 
       setTransfers((prev) => prev.map((t) =>
-        t.id === id ? { ...t, status: 'IN_TRANSIT', shippedAt: data.transfer.shippedAt } : t
+        t.id === id ? { ...t, status: 'IN_TRANSIT', shippedAt: data.transfer.shippedAt, trackingNumber: data.transfer.trackingNumber } : t
       ))
       showToast('Transfer shipped')
+      setShowShipModal(null)
+      setShipForm({ trackingNumber: '' })
     } catch (err: any) {
       showToast(err.message || 'Failed to ship', 'error')
     } finally {
@@ -181,14 +201,25 @@ export default function TransfersClient({ initialTransfers, products, warehouses
   }
 
   async function handleReceive(id: string) {
+    const qtyReceived = parseInt(receiveForm.quantityReceived)
+    const damaged = parseInt(receiveForm.damagedQuantity) || 0
+    if (!qtyReceived || qtyReceived < 1) {
+      showToast('Enter valid quantity received', 'error')
+      return
+    }
+    if (damaged > qtyReceived) {
+      showToast('Damaged quantity cannot exceed received quantity', 'error')
+      return
+    }
+
     setLoading(true)
     try {
       const res = await fetch(`/api/v1/transfers/${id}/receive`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          quantityReceived: parseInt(receiveForm.quantityReceived),
-          damagedQuantity: parseInt(receiveForm.damagedQuantity) || 0,
+          quantityReceived: qtyReceived,
+          damagedQuantity: damaged,
           notes: receiveForm.notes || undefined,
         }),
       })
@@ -196,7 +227,7 @@ export default function TransfersClient({ initialTransfers, products, warehouses
       if (!res.ok) throw new Error(data.error)
 
       setTransfers((prev) => prev.map((t) =>
-        t.id === id ? { ...t, status: 'COMPLETED', quantityReceived: parseInt(receiveForm.quantityReceived), receivedAt: data.transfer.receivedAt } : t
+        t.id === id ? { ...t, status: 'COMPLETED', quantityReceived: qtyReceived, receivedAt: data.transfer.receivedAt } : t
       ))
       showToast('Transfer received')
       setShowReceiveModal(null)
@@ -208,18 +239,18 @@ export default function TransfersClient({ initialTransfers, products, warehouses
     }
   }
 
-  const TABS: { key: Tab; label: string; count: number }[] = [
-    { key: 'requests', label: 'Open Requests', count: transfers.filter((t) => t.status === 'REQUESTED').length },
-    { key: 'my-transfers', label: 'My Transfers', count: transfers.filter((t) => t.status !== 'REQUESTED').length },
-    { key: 'accept', label: 'Accept & Fulfill', count: transfers.filter((t) => t.status === 'REQUESTED' && t.toWarehouse.id !== userWarehouseId).length },
-  ]
+  const incomingCount = transfers.filter((t) => t.status === 'REQUESTED' && (isAdmin || t.toWarehouse.id === userWarehouseId)).length
+  const fulfillCount = transfers.filter((t) => t.status === 'REQUESTED' && t.toWarehouse.id !== userWarehouseId).length
+  const activeCount = transfers.filter((t) => t.status !== 'REQUESTED').length
 
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h1 style={{ fontSize: 24, fontWeight: 600, color: 'var(--text-heading)' }}>Transfers</h1>
-          <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>{transfers.length} total</p>
+          <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>
+            {isAdmin ? `${transfers.length} total` : `${userWarehouseName} · ${transfers.length} total`}
+          </p>
         </div>
         <button onClick={() => setShowRequestModal(true)} className="btn btn-primary" style={{ gap: 8 }}>
           <Plus style={{ width: 16, height: 16 }} />
@@ -229,7 +260,11 @@ export default function TransfersClient({ initialTransfers, products, warehouses
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: 4, marginBottom: 20, borderBottom: '1px solid var(--border)', paddingBottom: 0 }}>
-        {TABS.map((t) => (
+        {([
+          { key: 'incoming' as Tab, label: 'Incoming Requests', count: incomingCount },
+          { key: 'fulfill' as Tab, label: 'Accept & Fulfill', count: fulfillCount },
+          { key: 'all' as Tab, label: 'In Progress', count: activeCount },
+        ]).map((t) => (
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
@@ -264,17 +299,20 @@ export default function TransfersClient({ initialTransfers, products, warehouses
       {filtered.length === 0 ? (
         <EmptyState
           icon={ArrowLeftRight}
-          title={tab === 'accept' ? 'No requests to accept' : tab === 'requests' ? 'No open requests' : 'No transfers yet'}
-          description={search ? 'Try a different search.' : tab === 'accept' ? 'All requests in your warehouse are fulfilled.' : 'Create a transfer request to get started.'}
+          title={tab === 'incoming' ? 'No incoming requests' : tab === 'fulfill' ? 'No requests to fulfill' : 'No active transfers'}
+          description={search ? 'Try a different search.' : tab === 'incoming' ? 'No one has requested stock for your warehouse yet.' : tab === 'fulfill' ? 'All requests have been fulfilled.' : 'Accepted transfers will appear here.'}
         />
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {filtered.map((t) => {
             const sc = STATUS_CONFIG[t.status] || STATUS_CONFIG.REQUESTED
             const isRequest = t.status === 'REQUESTED'
-            const canAccept = isRequest && t.toWarehouse.id !== userWarehouseId
-            const canShip = !isRequest && t.status === 'PENDING'
-            const canReceive = !isRequest && t.status === 'IN_TRANSIT'
+            const isIncoming = isRequest && t.toWarehouse.id === userWarehouseId
+            const canFulfill = isRequest && t.toWarehouse.id !== userWarehouseId
+            const canShip = !isRequest && t.status === 'PENDING' && (isAdmin || t.fromWarehouse.id === userWarehouseId)
+            const canReceive = !isRequest && t.status === 'IN_TRANSIT' && (isAdmin || t.toWarehouse.id === userWarehouseId)
+            const canDownloadPackingSlip = !isRequest && (t.status === 'PENDING' || t.status === 'IN_TRANSIT') && (isAdmin || t.fromWarehouse.id === userWarehouseId)
+            const canDownloadReceivingReport = t.status === 'COMPLETED' && (isAdmin || t.toWarehouse.id === userWarehouseId)
 
             return (
               <div key={t.id} className="card" style={{ padding: 20 }}>
@@ -298,6 +336,7 @@ export default function TransfersClient({ initialTransfers, products, warehouses
                         <span className="tabular" style={{ fontWeight: 600, color: 'var(--text-heading)' }}>x{t.quantityInitiated}</span>
                         <span> at </span>
                         <span style={{ fontWeight: 500 }}>{t.toWarehouse.name}</span>
+                        {isIncoming && <span style={{ marginLeft: 6, fontSize: 11, color: 'var(--accent)' }}>(your warehouse)</span>}
                       </div>
                     ) : (
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, fontSize: 13, color: 'var(--text-secondary)' }}>
@@ -314,34 +353,34 @@ export default function TransfersClient({ initialTransfers, products, warehouses
                   </div>
 
                   <div style={{ display: 'flex', gap: 8, flexShrink: 0, alignItems: 'center', flexWrap: 'wrap' }}>
-                    {!isRequest && (t.status === 'PENDING' || t.status === 'IN_TRANSIT') && (
+                    {canDownloadPackingSlip && (
                       <TransferOrderDownload transfer={{
                         id: t.id, product: t.product, fromWarehouse: t.fromWarehouse,
                         toWarehouse: t.toWarehouse, quantityInitiated: t.quantityInitiated,
                         trackingNumber: t.trackingNumber, notes: t.notes, createdAt: t.createdAt, shippedAt: t.shippedAt,
                       }} />
                     )}
-                    {t.status === 'COMPLETED' && (
+                    {canDownloadReceivingReport && (
                       <ReceivingReportDownload transfer={{
                         id: t.id, product: t.product, fromWarehouse: t.fromWarehouse,
                         toWarehouse: t.toWarehouse, quantityInitiated: t.quantityInitiated,
                         quantityReceived: t.quantityReceived, receivedAt: t.receivedAt, notes: t.notes,
                       }} />
                     )}
-                    {canAccept && (
+                    {canFulfill && (
                       <button onClick={() => { setShowAcceptModal(t.id); setAcceptForm({ fromWarehouseId: userWarehouseId || '' }) }} className="btn btn-primary" style={{ gap: 6, fontSize: 13 }}>
                         <Hand style={{ width: 14, height: 14 }} />
-                        Accept
+                        Fulfill
                       </button>
                     )}
                     {canShip && (
-                      <button onClick={() => handleShip(t.id)} disabled={loading} className="btn btn-primary" style={{ gap: 6, fontSize: 13 }}>
+                      <button onClick={() => { setShowShipModal(t.id); setShipForm({ trackingNumber: '' }) }} className="btn btn-primary" style={{ gap: 6, fontSize: 13 }}>
                         <Truck style={{ width: 14, height: 14 }} />
                         Ship
                       </button>
                     )}
                     {canReceive && (
-                      <button onClick={() => { setShowReceiveModal(t.id); setReceiveForm({ ...receiveForm, quantityReceived: t.quantityInitiated.toString() }) }} className="btn btn-primary" style={{ gap: 6, fontSize: 13 }}>
+                      <button onClick={() => { setShowReceiveModal(t.id); setReceiveForm({ quantityReceived: t.quantityInitiated.toString(), damagedQuantity: '0', notes: '' }) }} className="btn btn-primary" style={{ gap: 6, fontSize: 13 }}>
                         <CheckCircle style={{ width: 14, height: 14 }} />
                         Receive
                       </button>
@@ -377,14 +416,19 @@ export default function TransfersClient({ initialTransfers, products, warehouses
                 />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 6 }}>I need this at (my warehouse) *</label>
-                <CustomSelect
-                  options={warehouses.map((w) => ({ value: w.id, label: w.name }))}
-                  value={requestForm.toWarehouseId}
-                  onChange={(v) => setRequestForm({ ...requestForm, toWarehouseId: v })}
-                  placeholder="Select warehouse..."
-                  required
-                />
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 6 }}>Deliver to</label>
+                {isAdmin ? (
+                  <CustomSelect
+                    options={warehouses.map((w) => ({ value: w.id, label: w.name }))}
+                    value={warehouses[0]?.id || ''}
+                    onChange={() => {}}
+                    placeholder="Select warehouse..."
+                  />
+                ) : (
+                  <div style={{ padding: '8px 12px', background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border)', borderRadius: 6, fontSize: 14, color: 'var(--text-heading)' }}>
+                    {userWarehouseName || 'No warehouse assigned'}
+                  </div>
+                )}
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 6 }}>Quantity *</label>
@@ -411,29 +455,63 @@ export default function TransfersClient({ initialTransfers, products, warehouses
           <div onClick={() => setShowAcceptModal(null)} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.7)' }} />
           <div className="surface-2" style={{ position: 'relative', width: '100%', maxWidth: 420, borderRadius: 12, border: '1px solid var(--border)', padding: 24 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-              <h2 style={{ fontSize: 18, fontWeight: 600, color: 'var(--text-heading)' }}>Accept Transfer Request</h2>
+              <h2 style={{ fontSize: 18, fontWeight: 600, color: 'var(--text-heading)' }}>Fulfill Request</h2>
               <button onClick={() => setShowAcceptModal(null)} className="btn btn-ghost" style={{ padding: 4, minHeight: 'auto', minWidth: 'auto' }}>
                 <X style={{ width: 18, height: 18 }} />
               </button>
             </div>
             <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 16 }}>
-              Select the warehouse that will fulfill this request. Stock will be deducted from that warehouse.
+              Stock will be deducted from {isAdmin ? 'the selected' : 'your'} warehouse and shipped to the requester.
             </p>
             <form onSubmit={(e) => { e.preventDefault(); handleAccept(showAcceptModal) }} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <div>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 6 }}>Ship from (source warehouse) *</label>
-                <CustomSelect
-                  options={warehouses.filter((w) => w.id !== userWarehouseId).map((w) => ({ value: w.id, label: w.name }))}
-                  value={acceptForm.fromWarehouseId}
-                  onChange={(v) => setAcceptForm({ ...acceptForm, fromWarehouseId: v })}
-                  placeholder="Select warehouse..."
-                  required
-                />
-              </div>
+              {isAdmin && (
+                <div>
+                  <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 6 }}>Ship from (source) *</label>
+                  <CustomSelect
+                    options={warehouses.map((w) => ({ value: w.id, label: w.name }))}
+                    value={acceptForm.fromWarehouseId}
+                    onChange={(v) => setAcceptForm({ ...acceptForm, fromWarehouseId: v })}
+                    placeholder="Select warehouse..."
+                    required
+                  />
+                </div>
+              )}
+              {!isAdmin && (
+                <div style={{ padding: '8px 12px', background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border)', borderRadius: 6, fontSize: 14, color: 'var(--text-heading)' }}>
+                  Shipping from: <strong>{userWarehouseName}</strong>
+                </div>
+              )}
               <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>
                 <button type="button" onClick={() => setShowAcceptModal(null)} className="btn btn-ghost">Cancel</button>
                 <button type="submit" disabled={loading} className="btn btn-primary">
                   {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Accept & Deduct Stock'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Ship Modal */}
+      {showShipModal && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+          <div onClick={() => setShowShipModal(null)} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.7)' }} />
+          <div className="surface-2" style={{ position: 'relative', width: '100%', maxWidth: 420, borderRadius: 12, border: '1px solid var(--border)', padding: 24 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+              <h2 style={{ fontSize: 18, fontWeight: 600, color: 'var(--text-heading)' }}>Ship Transfer</h2>
+              <button onClick={() => setShowShipModal(null)} className="btn btn-ghost" style={{ padding: 4, minHeight: 'auto', minWidth: 'auto' }}>
+                <X style={{ width: 18, height: 18 }} />
+              </button>
+            </div>
+            <form onSubmit={(e) => { e.preventDefault(); handleShip(showShipModal) }} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 6 }}>Tracking Number (optional)</label>
+                <input className="input" value={shipForm.trackingNumber} onChange={(e) => setShipForm({ ...shipForm, trackingNumber: e.target.value })} placeholder="e.g., 1Z999AA10123456784" />
+              </div>
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>
+                <button type="button" onClick={() => setShowShipModal(null)} className="btn btn-ghost">Cancel</button>
+                <button type="submit" disabled={loading} className="btn btn-primary">
+                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Confirm Shipment'}
                 </button>
               </div>
             </form>
@@ -455,11 +533,12 @@ export default function TransfersClient({ initialTransfers, products, warehouses
             <form onSubmit={(e) => { e.preventDefault(); handleReceive(showReceiveModal) }} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div>
                 <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 6 }}>Quantity Received *</label>
-                <input className="input tabular" type="number" min="1" value={receiveForm.quantityReceived} onChange={(e) => setReceiveForm({ ...receiveForm, quantityReceived: e.target.value })} required />
+                <input className="input tabular" type="number" min="0" value={receiveForm.quantityReceived} onChange={(e) => setReceiveForm({ ...receiveForm, quantityReceived: e.target.value })} required />
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 6 }}>Damaged Quantity</label>
                 <input className="input tabular" type="number" min="0" value={receiveForm.damagedQuantity} onChange={(e) => setReceiveForm({ ...receiveForm, damagedQuantity: e.target.value })} />
+                <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>Damaged items will be written off from inventory.</p>
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 6 }}>Notes</label>

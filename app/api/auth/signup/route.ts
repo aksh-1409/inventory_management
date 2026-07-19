@@ -8,6 +8,7 @@ const signupSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   email: z.string().email('Please enter a valid email address'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
+  warehouseId: z.string().min(1, 'Please select a warehouse'),
 })
 
 export async function POST(req: NextRequest) {
@@ -33,7 +34,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const { name, email, password } = result.data
+    const { name, email, password, warehouseId } = result.data
 
     // Check for duplicate email
     const existing = await prisma.user.findUnique({ where: { email } })
@@ -54,6 +55,7 @@ export async function POST(req: NextRequest) {
         email,
         passwordHash,
         role: 'OPERATOR',
+        warehouseId,
       },
       select: {
         id: true,

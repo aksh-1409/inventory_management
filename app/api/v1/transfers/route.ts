@@ -52,6 +52,11 @@ export async function POST(req: NextRequest) {
 
     const { productId, toWarehouseId, quantity, notes } = result.data
 
+    // Operators can only request to their own warehouse
+    if (session.user.role === 'OPERATOR' && session.user.warehouseId !== toWarehouseId) {
+      return NextResponse.json({ error: 'You can only request transfers to your assigned warehouse' }, { status: 403 })
+    }
+
     // Create a transfer REQUEST — no source warehouse yet
     const transfer = await prisma.transfer.create({
       data: {

@@ -32,14 +32,26 @@ export async function POST(
     if (!existing) {
       return NextResponse.json({ error: 'Transfer not found' }, { status: 404 })
     }
+
+    // Only destination warehouse (or admin) can receive
+    if (session.user.role === 'OPERATOR' && session.user.warehouseId !== existing.toWarehouseId) {
+      return NextResponse.json({ error: 'Only the destination warehouse can receive this transfer' }, { status: 403 })
+    }
+
     if (existing.status !== 'IN_TRANSIT') {
       return NextResponse.json({ error: `Cannot receive transfer in ${existing.status} status` }, { status: 409 })
     }
 
-    const totalAccounted = quantityReceived + damagedQuantity
-    if (totalAccounted > existing.quantityInitiated) {
+    if (quantityReceived > existing.quantityInitiated) {
       return NextResponse.json(
-        { error: `Total received (${totalAccounted}) exceeds initiated quantity (${existing.quantityInitiated})` },
+        { error: `Received quantity (${quantityReceived}) exceeds initiated quantity (${existing.quantityInitiated})` },
+        { status: 400 }
+      )
+    }
+
+    if (damagedQuantity > quantityReceived) {
+      return NextResponse.json(
+        { error: `Damaged quantity (${damagedQuantity}) cannot exceed received quantity (${quantityReceived})` },
         { status: 400 }
       )
     }
@@ -62,8 +74,8 @@ export async function POST(
       update: {},
     })
 
-    // Atomic: receive good stock + update transfer + create transaction
-    const [transfer, updatedDest, transaction] = await prisma.$transaction([
+    // Atomic: receive good stock + update transfer + create transactions
+    const txOps: any[] = [
       prisma.transfer.update({
         where: { id },
         data: {
@@ -80,18 +92,39 @@ export async function POST(
       }),
       prisma.inventoryItem.update({
         where: { id: destInventory.id },
-        data: { quantity: { increment: goodQuantity } },
+        data: { quantity: { increment: quantityReceived } },
       }),
       prisma.inventoryTransaction.create({
         data: {
           inventoryItemId: destInventory.id,
           type: 'TRANSFER_IN',
-          delta: goodQuantity,
+          delta: quantityReceived,
           reference: `Transfer received${damagedQuantity > 0 ? ` (${damagedQuantity} damaged)` : ''}`,
           userId: session.user.id,
         },
       }),
-    ])
+    ]
+
+    // Write off damaged items: decrement from destination + log
+    if (damagedQuantity > 0) {
+      txOps.push(
+        prisma.inventoryItem.update({
+          where: { id: destInventory.id },
+          data: { quantity: { decrement: damagedQuantity } },
+        }),
+        prisma.inventoryTransaction.create({
+          data: {
+            inventoryItemId: destInventory.id,
+            type: 'DAMAGE',
+            delta: -damagedQuantity,
+            reference: `Damaged in transfer ${id}`,
+            userId: session.user.id,
+          },
+        }),
+      )
+    }
+
+    const [transfer, ...rest] = await prisma.$transaction(txOps)
 
     return NextResponse.json({ transfer })
   } catch (error) {

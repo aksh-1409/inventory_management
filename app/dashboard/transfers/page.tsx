@@ -3,9 +3,20 @@ import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import TransfersClient from './TransfersClient'
 
-async function getData() {
+async function getData(userRole: string, userWarehouseId: string | null) {
+  const isAdmin = userRole === 'ADMIN'
+
+  const whereFilter = isAdmin || !userWarehouseId ? {} : {
+    OR: [
+      { fromWarehouseId: userWarehouseId! },
+      { toWarehouseId: userWarehouseId! },
+      { status: 'REQUESTED' as const },
+    ],
+  }
+
   const [transfers, products, warehouses] = await Promise.all([
     prisma.transfer.findMany({
+      where: whereFilter,
       include: {
         product: true,
         fromWarehouse: true,
@@ -19,7 +30,9 @@ async function getData() {
       where: { deletedAt: null },
       orderBy: { name: 'asc' },
     }),
-    prisma.warehouse.findMany({ orderBy: { name: 'asc' } }),
+    prisma.warehouse.findMany({
+      orderBy: { name: 'asc' },
+    }),
   ])
 
   return {
@@ -47,7 +60,7 @@ export default async function TransfersPage() {
   const session = await auth()
   if (!session) redirect('/auth/login')
 
-  const data = await getData()
+  const data = await getData(session.user.role, session.user.warehouseId)
 
   return (
     <TransfersClient

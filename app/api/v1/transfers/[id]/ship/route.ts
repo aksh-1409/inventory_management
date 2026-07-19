@@ -28,6 +28,12 @@ export async function POST(
     if (!existing) {
       return NextResponse.json({ error: 'Transfer not found' }, { status: 404 })
     }
+
+    // Only source warehouse (or admin) can ship
+    if (session.user.role === 'OPERATOR' && session.user.warehouseId !== existing.fromWarehouseId) {
+      return NextResponse.json({ error: 'Only the source warehouse can ship this transfer' }, { status: 403 })
+    }
+
     if (existing.status !== 'PENDING') {
       return NextResponse.json({ error: `Cannot ship transfer in ${existing.status} status` }, { status: 409 })
     }

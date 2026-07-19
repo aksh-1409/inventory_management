@@ -26,6 +26,11 @@ export async function POST(
 
     const { fromWarehouseId } = result.data
 
+    // Operators can only accept requests where the source is their warehouse
+    if (session.user.role === 'OPERATOR' && session.user.warehouseId !== fromWarehouseId) {
+      return NextResponse.json({ error: 'You can only accept requests from your assigned warehouse' }, { status: 403 })
+    }
+
     const existing = await prisma.transfer.findUnique({ where: { id } })
     if (!existing) {
       return NextResponse.json({ error: 'Transfer not found' }, { status: 404 })

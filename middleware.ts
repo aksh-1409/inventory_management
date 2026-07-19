@@ -51,7 +51,9 @@ export default auth(async function middleware(req: NextRequest & { auth: any }) 
 
   // --- Protected routes: require any authenticated user ---
   if (pathname.startsWith('/dashboard') || pathname.startsWith('/api/v1')) {
-    if (!session) {
+    // Public: warehouses GET (needed for signup)
+    const isPublicWarehousesGet = pathname === '/api/v1/warehouses' && req.method === 'GET'
+    if (!isPublicWarehousesGet && !session) {
       const loginUrl = new URL('/auth/login', req.url)
       loginUrl.searchParams.set('callbackUrl', pathname)
       return applySecurityHeaders(NextResponse.redirect(loginUrl))

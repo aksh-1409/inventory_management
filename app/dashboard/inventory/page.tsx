@@ -14,6 +14,10 @@ async function getInventory(warehouseId: string | null) {
     include: {
       product: true,
       warehouse: true,
+      transactions: {
+        where: { type: 'DAMAGE' },
+        select: { delta: true },
+      },
     },
     orderBy: { product: { name: 'asc' } },
   })
@@ -21,6 +25,7 @@ async function getInventory(warehouseId: string | null) {
   return items.map((item) => ({
     id: item.id,
     quantity: item.quantity,
+    damaged: Math.abs(item.transactions.reduce((sum, t) => sum + t.delta, 0)),
     productId: item.productId,
     warehouseId: item.warehouseId,
     product: {

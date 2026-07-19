@@ -22,6 +22,7 @@ enum TransactionType {
   TRANSFER_IN
   TRANSFER_OUT
   ADJUSTMENT
+  DAMAGE
 }
 
 enum TransferStatus {
