@@ -67,7 +67,7 @@ async function getData(userRole: string, userWarehouseId: string | null) {
       receivedAt: t.receivedAt?.toISOString() || null,
       createdAt: t.createdAt.toISOString(),
       product: { id: t.product.id, name: t.product.name, sku: t.product.sku },
-      fromWarehouse: { id: t.fromWarehouse.id, name: t.fromWarehouse.name },
+      fromWarehouse: t.fromWarehouse ? { id: t.fromWarehouse.id, name: t.fromWarehouse.name } : null,
       toWarehouse: { id: t.toWarehouse.id, name: t.toWarehouse.name },
       initiatedBy: t.initiatedBy ? { name: t.initiatedBy.name } : null,
     })),

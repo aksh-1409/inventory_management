@@ -163,7 +163,7 @@ model InventoryTransaction {
 model Transfer {
   id                        String         @id @default(uuid()) @db.Uuid
   productId                 String         @map("product_id") @db.Uuid
-  fromWarehouseId           String         @map("from_warehouse_id") @db.Uuid
+  fromWarehouseId           String?        @map("from_warehouse_id") @db.Uuid
   toWarehouseId             String         @map("to_warehouse_id") @db.Uuid
   quantityInitiated         Int            @map("quantity_initiated")
   quantityReceived          Int            @default(0) @map("quantity_received")
@@ -179,7 +179,7 @@ model Transfer {
 
   // Relations
   product       Product   @relation(fields: [productId], references: [id])
-  fromWarehouse Warehouse @relation("FromWarehouse", fields: [fromWarehouseId], references: [id])
+  fromWarehouse Warehouse? @relation("FromWarehouse", fields: [fromWarehouseId], references: [id])
   toWarehouse   Warehouse @relation("ToWarehouse", fields: [toWarehouseId], references: [id])
   initiatedBy   User?     @relation("InitiatedByUser", fields: [initiatedById], references: [id])
 

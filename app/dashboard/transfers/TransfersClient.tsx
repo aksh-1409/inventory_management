@@ -19,7 +19,7 @@ interface Transfer {
   receivedAt: string | null
   createdAt: string
   product: { id: string; name: string; sku: string }
-  fromWarehouse: { id: string; name: string }
+  fromWarehouse: { id: string; name: string } | null
   toWarehouse: { id: string; name: string }
   initiatedBy: { name: string } | null
 }
@@ -78,7 +78,7 @@ export default function TransfersClient({ initialTransfers, products, warehouses
       const q = search.toLowerCase()
       list = list.filter(
         (t) => t.product.name.toLowerCase().includes(q) || t.product.sku.toLowerCase().includes(q) ||
-          t.fromWarehouse.name.toLowerCase().includes(q) || t.toWarehouse.name.toLowerCase().includes(q)
+          (t.fromWarehouse?.name ?? '').toLowerCase().includes(q) || t.toWarehouse.name.toLowerCase().includes(q)
       )
     }
     return list
@@ -129,7 +129,7 @@ export default function TransfersClient({ initialTransfers, products, warehouses
         receivedAt: null,
         createdAt: t.createdAt,
         product: { id: t.product.id, name: t.product.name, sku: t.product.sku },
-        fromWarehouse: { id: t.toWarehouse.id, name: t.toWarehouse.name },
+        fromWarehouse: null,
         toWarehouse: { id: t.toWarehouse.id, name: t.toWarehouse.name },
         initiatedBy: { name: 'You' },
       }, ...prev])
@@ -311,9 +311,9 @@ export default function TransfersClient({ initialTransfers, products, warehouses
             const isRequest = t.status === 'REQUESTED'
             const isIncoming = isRequest && t.toWarehouse.id === userWarehouseId
             const canFulfill = isRequest && t.toWarehouse.id !== userWarehouseId
-            const canShip = !isRequest && t.status === 'PENDING' && (isAdmin || t.fromWarehouse.id === userWarehouseId)
+            const canShip = !isRequest && t.status === 'PENDING' && (isAdmin || t.fromWarehouse?.id === userWarehouseId)
             const canReceive = !isRequest && t.status === 'IN_TRANSIT' && (isAdmin || t.toWarehouse.id === userWarehouseId)
-            const canDownloadPackingSlip = !isRequest && (t.status === 'PENDING' || t.status === 'IN_TRANSIT') && (isAdmin || t.fromWarehouse.id === userWarehouseId)
+            const canDownloadPackingSlip = !isRequest && (t.status === 'PENDING' || t.status === 'IN_TRANSIT') && (isAdmin || t.fromWarehouse?.id === userWarehouseId)
             const canDownloadReceivingReport = t.status === 'COMPLETED' && (isAdmin || t.toWarehouse.id === userWarehouseId)
 
             return (
@@ -342,7 +342,7 @@ export default function TransfersClient({ initialTransfers, products, warehouses
                       </div>
                     ) : (
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, fontSize: 13, color: 'var(--text-secondary)' }}>
-                        <span>{t.fromWarehouse.name}</span>
+                        <span>{t.fromWarehouse?.name ?? '?'}</span>
                         <ArrowLeftRight style={{ width: 12, height: 12 }} />
                         <span>{t.toWarehouse.name}</span>
                         <span className="tabular" style={{ fontWeight: 600, color: 'var(--text-heading)' }}>x{t.quantityInitiated}</span>

@@ -6,7 +6,7 @@ import { Download } from 'lucide-react'
 interface TransferData {
   id: string
   product: { name: string; sku: string }
-  fromWarehouse: { name: string }
+  fromWarehouse: { name: string } | null
   toWarehouse: { name: string }
   quantityInitiated: number
   trackingNumber: string | null
@@ -75,7 +75,7 @@ function TransferOrderPDF({ data }: { data: TransferData }) {
           <Text style={styles.sectionTitle}>Route</Text>
           <View style={styles.row}>
             <Text style={styles.label}>From</Text>
-            <Text style={styles.value}>{data.fromWarehouse.name}</Text>
+            <Text style={styles.value}>{data.fromWarehouse?.name ?? '?'}</Text>
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>To</Text>
@@ -157,7 +157,7 @@ const receivingStyles = StyleSheet.create({
 interface ReceivingData {
   id: string
   product: { name: string; sku: string }
-  fromWarehouse: { name: string }
+  fromWarehouse: { name: string } | null
   toWarehouse: { name: string }
   quantityInitiated: number
   quantityReceived: number
@@ -191,7 +191,7 @@ function ReceivingReportPDF({ data }: { data: ReceivingData }) {
             <Text style={receivingStyles.sectionTitle}>Supplier</Text>
             <View style={receivingStyles.row}>
               <Text style={receivingStyles.label}>Name</Text>
-              <Text style={receivingStyles.value}>{data.fromWarehouse.name}</Text>
+              <Text style={receivingStyles.value}>{data.fromWarehouse?.name ?? '?'}</Text>
             </View>
           </View>
 

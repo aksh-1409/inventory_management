@@ -68,7 +68,7 @@ async function getData(warehouseId: string | null) {
   const pendingCount = pendingTransfers.length
 
   return {
-    stats: { totalProducts, totalWarehouses: (await prisma.warehouse.findMany()).length, lowStockCount, pendingCount },
+    stats: { totalProducts, totalWarehouses, lowStockCount, pendingCount },
     products: products.map((p) => ({ id: p.id, name: p.name, sku: p.sku, reorderPoint: p.reorderPoint })),
     warehouses: warehouses.map((w) => ({ id: w.id, name: w.name })),
     matrix,
@@ -78,7 +78,7 @@ async function getData(warehouseId: string | null) {
       status: t.status,
       createdAt: t.createdAt.toISOString(),
       product: { name: t.product.name, sku: t.product.sku },
-      fromWarehouse: { name: t.fromWarehouse.name },
+      fromWarehouse: t.fromWarehouse ? { name: t.fromWarehouse.name } : null,
       toWarehouse: { name: t.toWarehouse.name },
     })),
     recentTransactions: recentTransactions.map((t) => ({

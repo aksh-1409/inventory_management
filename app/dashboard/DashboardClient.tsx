@@ -11,7 +11,7 @@ interface Props {
   pendingTransfers: {
     id: string; quantityInitiated: number; status: string; createdAt: string
     product: { name: string; sku: string }
-    fromWarehouse: { name: string }
+    fromWarehouse: { name: string } | null
     toWarehouse: { name: string }
   }[]
   recentTransactions: {
@@ -127,7 +127,7 @@ export default function DashboardClient({ stats, products, warehouses, matrix, p
                   <div key={t.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
                     <div>
                       <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-heading)' }}>{t.product.name}</p>
-                      <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>{t.fromWarehouse.name} → {t.toWarehouse.name}</p>
+                      <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>{(t.fromWarehouse?.name ?? '?')} → {t.toWarehouse.name}</p>
                     </div>
                     <div style={{ textAlign: 'right' }}>
                       <span className="badge" style={{ background: t.status === 'PENDING' ? 'rgba(251,191,36,0.12)' : 'rgba(99,102,241,0.12)', color: t.status === 'PENDING' ? 'var(--warning)' : 'var(--accent)', fontSize: 11 }}>{t.status}</span>
