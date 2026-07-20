@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { requireAuth } from '@/lib/api-auth'
+import { requireAuth, hasScope } from '@/lib/api-auth'
 import { z } from 'zod'
 
 const receiveSchema = z.object({
@@ -20,6 +20,10 @@ export async function POST(req: NextRequest) {
     }
     const { user } = authResult
 
+    if (!hasScope(user, 'receive:write')) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
     const body = await req.json()
     const result = receiveSchema.safeParse(body)
     if (!result.success) {
@@ -27,6 +31,13 @@ export async function POST(req: NextRequest) {
     }
 
     const { productId, warehouseId, supplierId, quantity, unitCost, notes } = result.data
+
+    if (user.role === 'OPERATOR' && user.warehouseId !== warehouseId) {
+      return NextResponse.json(
+        { error: 'You can only receive stock into your assigned warehouse' },
+        { status: 403 }
+      )
+    }
 
     // Verify product and warehouse exist
     const [product, warehouse, supplier] = await Promise.all([
@@ -39,35 +50,29 @@ export async function POST(req: NextRequest) {
     if (!warehouse) return NextResponse.json({ error: 'Warehouse not found' }, { status: 404 })
     if (!supplier) return NextResponse.json({ error: 'Supplier not found' }, { status: 404 })
 
-    // Upsert inventory item (create if doesn't exist)
-    const inventoryItem = await prisma.inventoryItem.upsert({
-      where: {
-        productId_warehouseId: { productId, warehouseId },
-      },
-      create: {
-        productId,
-        warehouseId,
-        quantity: 0,
-      },
-      update: {},
-    })
+    // Atomic: upsert, increment stock, create transaction — all in one transaction
+    const [updatedItem, transaction] = await prisma.$transaction(async (tx) => {
+      const inv = await tx.inventoryItem.upsert({
+        where: { productId_warehouseId: { productId, warehouseId } },
+        create: { productId, warehouseId, quantity: 0 },
+        update: {},
+      })
 
-    // Atomic: increment stock + create transaction
-    const [updatedItem, transaction] = await prisma.$transaction([
-      prisma.inventoryItem.update({
-        where: { id: inventoryItem.id },
+      const updated = await tx.inventoryItem.update({
+        where: { id: inv.id },
         data: { quantity: { increment: quantity } },
-      }),
-      prisma.inventoryTransaction.create({
+      })
+      const txn = await tx.inventoryTransaction.create({
         data: {
-          inventoryItemId: inventoryItem.id,
+          inventoryItemId: inv.id,
           type: 'IN',
           delta: quantity,
           reference: notes || `Received from ${supplier.name}`,
           userId: user.id,
         },
-      }),
-    ])
+      })
+      return [updated, txn]
+    })
 
     return NextResponse.json({
       receipt: {

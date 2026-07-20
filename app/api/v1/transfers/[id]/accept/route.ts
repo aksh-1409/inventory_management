@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { requireAuth } from '@/lib/api-auth'
+import { requireAuth, hasScope } from '@/lib/api-auth'
 import { z } from 'zod'
 
 const acceptSchema = z.object({
@@ -18,6 +18,10 @@ export async function POST(
     }
     const { user } = authResult
 
+    if (!hasScope(user, 'transfers:write')) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
     const { id } = await ctx.params
     const body = await req.json()
     const result = acceptSchema.safeParse(body)
@@ -32,62 +36,52 @@ export async function POST(
       return NextResponse.json({ error: 'You can only accept requests from your assigned warehouse' }, { status: 403 })
     }
 
-    const existing = await prisma.transfer.findUnique({ where: { id } })
-    if (!existing) {
-      return NextResponse.json({ error: 'Transfer not found' }, { status: 404 })
-    }
-    if (existing.status !== 'REQUESTED') {
-      return NextResponse.json({ error: `Cannot accept transfer in ${existing.status} status` }, { status: 409 })
-    }
+    const [transfer] = await prisma.$transaction(async (tx) => {
+      // Lock the transfer row so concurrent requests block until one commits
+      await tx.$executeRaw`SELECT status FROM transfers WHERE id = ${id} FOR UPDATE`
+      const existing = await tx.transfer.findUnique({ where: { id } })
+      if (!existing) throw new Error('NOT_FOUND:Transfer not found')
+      if (existing.status !== 'REQUESTED') throw new Error(`CONFLICT:Cannot accept transfer in ${existing.status} status`)
 
-    // Validate same warehouse
-    if (fromWarehouseId === existing.toWarehouseId) {
-      return NextResponse.json({ error: 'Source and destination warehouses must be different' }, { status: 400 })
-    }
+      if (fromWarehouseId === existing.toWarehouseId) {
+        throw new Error('BAD_REQUEST:Source and destination warehouses must be different')
+      }
 
-    // Check source warehouse has enough stock
-    const sourceInventory = await prisma.inventoryItem.findUnique({
-      where: { productId_warehouseId: { productId: existing.productId, warehouseId: fromWarehouseId } },
-    })
+      await tx.$executeRaw`SELECT quantity FROM inventory_items WHERE product_id = ${existing.productId} AND warehouse_id = ${fromWarehouseId} FOR UPDATE`
 
-    if (!sourceInventory || sourceInventory.quantity < existing.quantityInitiated) {
-      return NextResponse.json(
-        { error: `Insufficient stock at source. Available: ${sourceInventory?.quantity || 0}, requested: ${existing.quantityInitiated}` },
-        { status: 409 }
-      )
-    }
+      const sourceInv = await tx.inventoryItem.findUnique({
+        where: { productId_warehouseId: { productId: existing.productId, warehouseId: fromWarehouseId } },
+      })
+      if (!sourceInv || sourceInv.quantity < existing.quantityInitiated) {
+        throw new Error(`CONFLICT:Insufficient stock at source. Available: ${sourceInv?.quantity || 0}, requested: ${existing.quantityInitiated}`)
+      }
 
-    // Atomic: update transfer + decrement source stock + create transaction
-    const [transfer, updatedSource] = await prisma.$transaction([
-      prisma.transfer.update({
+      const updatedTransfer = await tx.transfer.update({
         where: { id },
-        data: {
-          fromWarehouseId,
-          status: 'PENDING',
-        },
-        include: {
-          product: true,
-          fromWarehouse: true,
-          toWarehouse: true,
-        },
-      }),
-      prisma.inventoryItem.update({
-        where: { id: sourceInventory.id },
+        data: { fromWarehouseId, status: 'PENDING' },
+        include: { product: true, fromWarehouse: true, toWarehouse: true },
+      })
+      await tx.inventoryItem.update({
+        where: { id: sourceInv.id },
         data: { quantity: { decrement: existing.quantityInitiated } },
-      }),
-      prisma.inventoryTransaction.create({
+      })
+      await tx.inventoryTransaction.create({
         data: {
-          inventoryItemId: sourceInventory.id,
+          inventoryItemId: sourceInv.id,
           type: 'TRANSFER_OUT',
           delta: -existing.quantityInitiated,
           reference: `Transfer accepted — shipping to ${existing.toWarehouseId}`,
           userId: user.id,
         },
-      }),
-    ])
+      })
+      return [updatedTransfer]
+    })
 
     return NextResponse.json({ transfer })
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.message?.startsWith('NOT_FOUND:')) return NextResponse.json({ error: error.message.slice(9) }, { status: 404 })
+    if (error?.message?.startsWith('CONFLICT:')) return NextResponse.json({ error: error.message.slice(9) }, { status: 409 })
+    if (error?.message?.startsWith('BAD_REQUEST:')) return NextResponse.json({ error: error.message.slice(12) }, { status: 400 })
     console.error('[TRANSFER_ACCEPT_ERROR]', error)
     return NextResponse.json({ error: 'Internal server error.' }, { status: 500 })
   }

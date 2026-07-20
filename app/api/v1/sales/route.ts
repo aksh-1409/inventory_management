@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { requireAuth } from '@/lib/api-auth'
+import { requireAuth, hasScope } from '@/lib/api-auth'
+import { dispatchWebhook } from '@/lib/webhooks'
 import { z } from 'zod'
 
 const saleSchema = z.object({
@@ -20,6 +21,10 @@ export async function POST(req: NextRequest) {
     }
     const { user } = authResult
 
+    if (!hasScope(user, 'sales:write')) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
     const body = await req.json()
     console.log('[SALE_POST_BODY]', JSON.stringify(body))
     const result = saleSchema.safeParse(body)
@@ -29,44 +34,47 @@ export async function POST(req: NextRequest) {
 
     const { productId, warehouseId, customerId, quantity, unitPrice, notes } = result.data
 
-    // Find inventory item
-    const inventoryItem = await prisma.inventoryItem.findUnique({
-      where: {
-        productId_warehouseId: { productId, warehouseId },
-      },
-    })
-
-    if (!inventoryItem) {
+    if (user.role === 'OPERATOR' && user.warehouseId !== warehouseId) {
       return NextResponse.json(
-        { error: 'Product not found in this warehouse' },
-        { status: 404 }
+        { error: 'You can only record sales for your assigned warehouse' },
+        { status: 403 }
       )
     }
 
-    // Atomic guard: check sufficient stock
-    if (inventoryItem.quantity < quantity) {
-      return NextResponse.json(
-        { error: `Insufficient stock. Available: ${inventoryItem.quantity}, requested: ${quantity}` },
-        { status: 409 }
-      )
-    }
+    // Atomic: lock row, check stock, decrement, log — all in one transaction
+    const { updatedItem, transaction } = await prisma.$transaction(async (tx) => {
+      const item = await tx.inventoryItem.findUnique({
+        where: { productId_warehouseId: { productId, warehouseId } },
+      })
+      if (!item) throw new Error('NOT_FOUND:Product not found in this warehouse')
 
-    // Atomic: decrement stock + create transaction
-    const [updatedItem, transaction] = await prisma.$transaction([
-      prisma.inventoryItem.update({
-        where: { id: inventoryItem.id },
+      await tx.$executeRaw`SELECT quantity FROM inventory_items WHERE id = ${item.id} FOR UPDATE`
+
+      const locked = await tx.inventoryItem.findUnique({ where: { id: item.id } })
+      if (locked!.quantity < quantity) {
+        throw new Error(`CONFLICT:Insufficient stock. Available: ${locked!.quantity}, requested: ${quantity}`)
+      }
+
+      const updated = await tx.inventoryItem.update({
+        where: { id: item.id },
         data: { quantity: { decrement: quantity } },
-      }),
-      prisma.inventoryTransaction.create({
+      })
+      const txn = await tx.inventoryTransaction.create({
         data: {
-          inventoryItemId: inventoryItem.id,
+          inventoryItemId: item.id,
           type: 'OUT',
           delta: -quantity,
           reference: notes || `Sale to customer`,
           userId: user.id,
         },
-      }),
-    ])
+      })
+      return { updatedItem: updated, transaction: txn }
+    })
+
+    dispatchWebhook('sale.created', {
+      saleId: transaction.id, productId, warehouseId, customerId, quantity, unitPrice,
+      total: quantity * unitPrice, remainingStock: updatedItem.quantity,
+    })
 
     // Fetch related names for response
     const [product, warehouse, customer] = await Promise.all([
@@ -91,7 +99,13 @@ export async function POST(req: NextRequest) {
       },
       remainingStock: updatedItem.quantity,
     }, { status: 201 })
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.message?.startsWith('NOT_FOUND:')) {
+      return NextResponse.json({ error: error.message.slice(9) }, { status: 404 })
+    }
+    if (error?.message?.startsWith('CONFLICT:')) {
+      return NextResponse.json({ error: error.message.slice(9) }, { status: 409 })
+    }
     console.error('[SALE_POST_ERROR]', error)
     return NextResponse.json({ error: 'Internal server error.' }, { status: 500 })
   }

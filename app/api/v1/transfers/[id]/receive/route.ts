@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { requireAuth } from '@/lib/api-auth'
+import { requireAuth, hasScope } from '@/lib/api-auth'
+import { dispatchWebhook } from '@/lib/webhooks'
 import { z } from 'zod'
 
 const receiveSchema = z.object({
@@ -20,6 +21,10 @@ export async function POST(
     }
     const { user } = authResult
 
+    if (!hasScope(user, 'transfers:write')) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
     const { id } = await ctx.params
     const body = await req.json()
     const result = receiveSchema.safeParse(body)
@@ -29,23 +34,17 @@ export async function POST(
 
     const { quantityReceived, damagedQuantity = 0, notes } = result.data
 
-    const existing = await prisma.transfer.findUnique({ where: { id } })
-    if (!existing) {
-      return NextResponse.json({ error: 'Transfer not found' }, { status: 404 })
-    }
+    // Do a lightweight read for pre-checks that don't need atomicity
+    const preCheck = await prisma.transfer.findUnique({ where: { id }, select: { toWarehouseId: true, quantityInitiated: true } })
+    if (!preCheck) return NextResponse.json({ error: 'Transfer not found' }, { status: 404 })
 
-    // Only destination warehouse (or admin) can receive
-    if (user.role === 'OPERATOR' && user.warehouseId !== existing.toWarehouseId) {
+    if (user.role === 'OPERATOR' && user.warehouseId !== preCheck.toWarehouseId) {
       return NextResponse.json({ error: 'Only the destination warehouse can receive this transfer' }, { status: 403 })
     }
 
-    if (existing.status !== 'IN_TRANSIT') {
-      return NextResponse.json({ error: `Cannot receive transfer in ${existing.status} status` }, { status: 409 })
-    }
-
-    if (quantityReceived > existing.quantityInitiated) {
+    if (quantityReceived > preCheck.quantityInitiated) {
       return NextResponse.json(
-        { error: `Received quantity (${quantityReceived}) exceeds initiated quantity (${existing.quantityInitiated})` },
+        { error: `Received quantity (${quantityReceived}) exceeds initiated quantity (${preCheck.quantityInitiated})` },
         { status: 400 }
       )
     }
@@ -57,27 +56,22 @@ export async function POST(
       )
     }
 
-    const goodQuantity = quantityReceived - damagedQuantity
+    // Atomic: lock, validate status, upsert, update, log — all in one transaction
+    const [transfer] = await prisma.$transaction(async (tx) => {
+      const existing = await tx.transfer.findUnique({ where: { id } })
+      if (!existing) throw new Error('NOT_FOUND:Transfer not found')
+      if (existing.status !== 'IN_TRANSIT') throw new Error(`CONFLICT:Cannot receive transfer in ${existing.status} status`)
 
-    // Find or create destination inventory
-    const destInventory = await prisma.inventoryItem.upsert({
-      where: {
-        productId_warehouseId: {
-          productId: existing.productId,
-          warehouseId: existing.toWarehouseId,
-        },
-      },
-      create: {
-        productId: existing.productId,
-        warehouseId: existing.toWarehouseId,
-        quantity: 0,
-      },
-      update: {},
-    })
+      // Lock destination inventory row
+      await tx.$executeRaw`SELECT quantity FROM inventory_items WHERE product_id = ${existing.productId} AND warehouse_id = ${existing.toWarehouseId} FOR UPDATE`
 
-    // Atomic: receive good stock + update transfer + create transactions
-    const txOps: any[] = [
-      prisma.transfer.update({
+      const destInventory = await tx.inventoryItem.upsert({
+        where: { productId_warehouseId: { productId: existing.productId, warehouseId: existing.toWarehouseId } },
+        create: { productId: existing.productId, warehouseId: existing.toWarehouseId, quantity: 0 },
+        update: {},
+      })
+
+      const updatedTransfer = await tx.transfer.update({
         where: { id },
         data: {
           status: 'COMPLETED',
@@ -85,17 +79,14 @@ export async function POST(
           receivedAt: new Date(),
           notes: notes || existing.notes,
         },
-        include: {
-          product: true,
-          fromWarehouse: true,
-          toWarehouse: true,
-        },
-      }),
-      prisma.inventoryItem.update({
+        include: { product: true, fromWarehouse: true, toWarehouse: true },
+      })
+
+      await tx.inventoryItem.update({
         where: { id: destInventory.id },
         data: { quantity: { increment: quantityReceived } },
-      }),
-      prisma.inventoryTransaction.create({
+      })
+      await tx.inventoryTransaction.create({
         data: {
           inventoryItemId: destInventory.id,
           type: 'TRANSFER_IN',
@@ -103,17 +94,14 @@ export async function POST(
           reference: `Transfer received${damagedQuantity > 0 ? ` (${damagedQuantity} damaged)` : ''}`,
           userId: user.id,
         },
-      }),
-    ]
+      })
 
-    // Write off damaged items: decrement from destination + log
-    if (damagedQuantity > 0) {
-      txOps.push(
-        prisma.inventoryItem.update({
+      if (damagedQuantity > 0) {
+        await tx.inventoryItem.update({
           where: { id: destInventory.id },
           data: { quantity: { decrement: damagedQuantity } },
-        }),
-        prisma.inventoryTransaction.create({
+        })
+        await tx.inventoryTransaction.create({
           data: {
             inventoryItemId: destInventory.id,
             type: 'DAMAGE',
@@ -121,14 +109,25 @@ export async function POST(
             reference: `Damaged in transfer ${id}`,
             userId: user.id,
           },
-        }),
-      )
-    }
+        })
+      }
 
-    const [transfer, ...rest] = await prisma.$transaction(txOps)
+      return [updatedTransfer]
+    })
+
+    dispatchWebhook('transfer.completed', {
+      transferId: id,
+      productId: transfer.productId,
+      fromWarehouseId: transfer.fromWarehouseId,
+      toWarehouseId: transfer.toWarehouseId,
+      quantityReceived,
+      damagedQuantity,
+    })
 
     return NextResponse.json({ transfer })
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.message?.startsWith('NOT_FOUND:')) return NextResponse.json({ error: error.message.slice(9) }, { status: 404 })
+    if (error?.message?.startsWith('CONFLICT:')) return NextResponse.json({ error: error.message.slice(9) }, { status: 409 })
     console.error('[TRANSFER_RECEIVE_ERROR]', error)
     return NextResponse.json({ error: 'Internal server error.' }, { status: 500 })
   }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { requireAuth } from '@/lib/api-auth'
+import { requireAuth, hasScope } from '@/lib/api-auth'
 import { z } from 'zod'
 
 const adjustmentSchema = z.object({
@@ -17,8 +17,18 @@ export async function GET(req: NextRequest) {
     }
     const { user } = authResult
 
+    const { searchParams } = new URL(req.url)
+    const take = Math.min(Number(searchParams.get('take')) || 100, 500)
+    const skip = Number(searchParams.get('skip')) || 0
+    const warehouseId = searchParams.get('warehouseId') || undefined
+
     const items = await prisma.inventoryItem.findMany({
-      where: { product: { deletedAt: null } },
+      take,
+      skip,
+      where: {
+        ...(warehouseId ? { warehouseId } : {}),
+        product: { deletedAt: null },
+      },
       include: {
         product: true,
         warehouse: true,
@@ -57,8 +67,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
     const { user } = authResult
-    if (user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Forbidden: Admin access required' }, { status: 403 })
+    if (!hasScope(user, 'inventory:write')) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     const body = await req.json()
@@ -73,15 +83,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Adjustment cannot be zero' }, { status: 400 })
     }
 
-    // Atomic: Read current, update, log transaction — all in one transaction
-    const [updatedItem, transaction] = await prisma.$transaction([
-      prisma.inventoryItem.update({
+    // Atomic: lock row, update, log — all in one interactive transaction
+    const [updatedItem, transaction] = await prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT quantity FROM inventory_items WHERE id = ${inventoryItemId} FOR UPDATE`
+      const updated = await tx.inventoryItem.update({
         where: { id: inventoryItemId },
-        data: {
-          quantity: { increment: delta },
-        },
-      }),
-      prisma.inventoryTransaction.create({
+        data: { quantity: { increment: delta } },
+      })
+      const txn = await tx.inventoryTransaction.create({
         data: {
           inventoryItemId,
           type: 'ADJUSTMENT',
@@ -89,8 +98,9 @@ export async function POST(req: NextRequest) {
           reference: `Adjustment: ${reason}`,
           userId: user.id,
         },
-      }),
-    ])
+      })
+      return [updated, txn]
+    })
 
     return NextResponse.json({
       item: updatedItem,
