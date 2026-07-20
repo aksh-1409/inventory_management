@@ -58,7 +58,7 @@ export interface InventoryItem {
   updatedAt: Date;
 }
 
-export type TransactionType = 'IN' | 'OUT' | 'TRANSFER_IN' | 'TRANSFER_OUT' | 'ADJUSTMENT';
+export type TransactionType = 'IN' | 'OUT' | 'TRANSFER_IN' | 'TRANSFER_OUT' | 'ADJUSTMENT' | 'DAMAGE';
 
 export interface InventoryTransaction {
   id: string;
@@ -75,7 +75,7 @@ export type TransferStatus = 'PENDING' | 'IN_TRANSIT' | 'COMPLETED' | 'PARTIAL' 
 export interface Transfer {
   id: string;
   productId: string;
-  fromWarehouseId: string;
+  fromWarehouseId: string | null;
   toWarehouseId: string;
   quantityInitiated: number;
   quantityReceived: number;

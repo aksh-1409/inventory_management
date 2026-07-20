@@ -30,7 +30,7 @@ export function checkRateLimit(key: string): {
   const entry = store.get(key)
 
   // No previous entry or window has expired — reset
-  if (!entry || now > entry.resetAt) {
+  if (!entry || now >= entry.resetAt) {
     store.set(key, { count: 1, resetAt: now + WINDOW_MS })
     return { success: true, remaining: MAX_ATTEMPTS - 1 }
   }
@@ -62,7 +62,7 @@ export function resetRateLimit(key: string): void {
 export function cleanupRateLimit(): void {
   const now = Date.now()
   for (const [key, entry] of store.entries()) {
-    if (now > entry.resetAt) {
+    if (now >= entry.resetAt) {
       store.delete(key)
     }
   }

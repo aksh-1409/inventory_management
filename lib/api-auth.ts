@@ -26,12 +26,16 @@ export async function apiAuth(req: NextRequest): Promise<AuthUser | null> {
     })
 
     if (!apiKey || !apiKey.isActive) return null
-    if (apiKey.expiresAt && apiKey.expiresAt < new Date()) return null
+    if (apiKey.expiresAt && apiKey.expiresAt <= new Date()) return null
 
-    prisma.apiKey.update({
-      where: { id: apiKey.id },
-      data: { lastUsedAt: new Date() },
-    }).catch(() => {})
+    try {
+      await prisma.apiKey.update({
+        where: { id: apiKey.id },
+        data: { lastUsedAt: new Date() },
+      })
+    } catch (e) {
+      console.error('[API_AUTH] failed to update lastUsedAt', e)
+    }
 
     return {
       id: apiKey.userId,
@@ -67,6 +71,7 @@ export async function requireAuth(req: NextRequest): Promise<{ user: AuthUser; s
 
 export function hasScope(user: AuthUser, scope: string): boolean {
   if (user.role === 'ADMIN') return true
-  if (!user.scopes) return false
+  // Session users (no scopes array) are trusted — only API-key users are scope-enforced
+  if (user.scopes === undefined) return true
   return user.scopes.includes(scope)
 }
