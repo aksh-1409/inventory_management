@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { requireAuth } from '@/lib/api-auth'
+import { requireAuth, hasScope } from '@/lib/api-auth'
 import { z } from 'zod'
 
 const customerSchema = z.object({
   name: z.string().min(1, 'Name is required'),
-  email: z.string().email().optional().or(z.literal('')),
+  email: z.string().email().nullable().optional().or(z.literal('')),
   phone: z.string().min(1, 'Phone is required'),
 })
 
@@ -32,6 +32,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
     const { user } = authResult
+
+    if (!hasScope(user, 'customers:write')) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
 
     const body = await req.json()
     const result = customerSchema.safeParse(body)

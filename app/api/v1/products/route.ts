@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { requireAuth } from '@/lib/api-auth'
+import { requireAuth, hasScope } from '@/lib/api-auth'
 import { z } from 'zod'
 
 const productSchema = z.object({
   sku: z.string().min(1, 'SKU is required'),
   name: z.string().min(1, 'Name is required'),
-  description: z.string().optional(),
+  description: z.string().nullable().optional(),
   price: z.number().positive('Price must be positive'),
-  costPrice: z.number().positive().optional(),
+  costPrice: z.number().positive().nullable().optional(),
   reorderPoint: z.number().int().min(0).default(5),
-  category: z.string().optional(),
+  category: z.string().nullable().optional(),
 })
 
 export async function GET(req: NextRequest) {
@@ -23,8 +23,12 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url)
     const search = searchParams.get('search') || ''
+    const take = Math.min(Number(searchParams.get('take')) || 100, 500)
+    const skip = Number(searchParams.get('skip')) || 0
 
     const products = await prisma.product.findMany({
+      take,
+      skip,
       where: {
         deletedAt: null,
         ...(search ? {
@@ -67,8 +71,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
     const { user } = authResult
-    if (user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Forbidden: Admin access required' }, { status: 403 })
+    if (!hasScope(user, 'products:write')) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     const body = await req.json()

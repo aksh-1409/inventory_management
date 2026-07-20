@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { requireAuth } from '@/lib/api-auth'
+import { requireAuth, hasScope } from '@/lib/api-auth'
 import { z } from 'zod'
 
 const requestSchema = z.object({
@@ -19,6 +19,17 @@ export async function GET(req: NextRequest) {
     const { user } = authResult
 
     const transfers = await prisma.transfer.findMany({
+      ...(user.role === 'OPERATOR' && user.warehouseId
+        ? {
+            where: {
+              OR: [
+                { fromWarehouseId: user.warehouseId },
+                { toWarehouseId: user.warehouseId },
+                { status: 'REQUESTED' as const },
+              ],
+            },
+          }
+        : {}),
       include: {
         product: true,
         fromWarehouse: true,
@@ -44,6 +55,10 @@ export async function POST(req: NextRequest) {
     }
     const { user } = authResult
 
+    if (!hasScope(user, 'transfers:write')) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
     const body = await req.json()
     console.log('[TRANSFER_POST_BODY]', JSON.stringify(body))
     const result = requestSchema.safeParse(body)
@@ -63,7 +78,6 @@ export async function POST(req: NextRequest) {
     const transfer = await prisma.transfer.create({
       data: {
         productId,
-        fromWarehouseId: toWarehouseId, // placeholder — will be overwritten on accept
         toWarehouseId,
         quantityInitiated: quantity,
         status: 'REQUESTED',

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { requireAuth } from '@/lib/api-auth'
+import { requireAuth, hasScope } from '@/lib/api-auth'
 import { z } from 'zod'
 
 const customerUpdateSchema = z.object({
@@ -44,6 +44,10 @@ export async function PATCH(
     }
     const { user } = authResult
 
+    if (!hasScope(user, 'customers:write')) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
     const { id } = await ctx.params
     const body = await req.json()
     const result = customerUpdateSchema.safeParse(body)
@@ -82,6 +86,10 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
     const { user } = authResult
+
+    if (!hasScope(user, 'customers:write')) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
 
     const { id } = await ctx.params
     const existing = await prisma.customer.findUnique({ where: { id } })

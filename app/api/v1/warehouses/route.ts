@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { requireAuth } from '@/lib/api-auth'
+import { requireAuth, hasScope } from '@/lib/api-auth'
 import { z } from 'zod'
 
 const warehouseSchema = z.object({
@@ -8,14 +8,18 @@ const warehouseSchema = z.object({
   location: z.string().optional(),
 })
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    const { searchParams } = new URL(req.url)
+    const take = Math.min(Number(searchParams.get('take')) || 100, 500)
+    const skip = Number(searchParams.get('skip')) || 0
+
     const warehouses = await prisma.warehouse.findMany({
+      take,
+      skip,
       orderBy: { name: 'asc' },
       include: {
-        inventoryItems: {
-          include: { product: true },
-        },
+        _count: { select: { inventoryItems: true } },
       },
     })
 
@@ -33,8 +37,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
     const { user } = authResult
-    if (user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Forbidden: Admin access required' }, { status: 403 })
+    if (!hasScope(user, 'warehouses:write')) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     const body = await req.json()

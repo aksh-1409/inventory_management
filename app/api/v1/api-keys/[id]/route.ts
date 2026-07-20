@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { requireAuth } from '@/lib/api-auth'
+import { requireAuth, hasScope } from '@/lib/api-auth'
 
 export async function DELETE(
   req: NextRequest,
@@ -12,7 +12,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
     const { user } = authResult
-    if (user.role !== 'ADMIN') {
+    if (!hasScope(user, 'api-keys:write')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
