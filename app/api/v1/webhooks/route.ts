@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { requireAuth } from '@/lib/api-auth'
+import { requireAuth, hasScope } from '@/lib/api-auth'
 import { z } from 'zod'
 
 const createSchema = z.object({
-  eventType: z.string().min(1),
+  eventType: z.enum(['stock.low', 'sale.created', 'transfer.completed']),
   targetUrl: z.string().url(),
   secret: z.string().optional(),
 })
@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
     const { user } = authResult
-    if (user.role !== 'ADMIN') {
+    if (!hasScope(user, 'webhooks:read')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
     const { user } = authResult
-    if (user.role !== 'ADMIN') {
+    if (!hasScope(user, 'webhooks:write')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
