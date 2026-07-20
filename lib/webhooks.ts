@@ -45,18 +45,18 @@ export async function dispatchWebhook(eventType: string, data: Record<string, un
             where: { id: sub.id },
             data: {
               lastTriggeredAt: new Date(),
-              retryCount: res.ok ? 0 : sub.retryCount + 1,
+              retryCount: res.ok ? 0 : { increment: 1 },
             },
           })
         } catch {
           await prisma.webhookSubscription.update({
             where: { id: sub.id },
-            data: { retryCount: sub.retryCount + 1 },
+            data: { retryCount: { increment: 1 } },
           }).catch(() => {})
         }
       })
     )
-  } catch {
-    // Don't let webhook failures block the main flow
+  } catch (e) {
+    console.error(`[WEBHOOK] dispatch failed for ${eventType}`, e)
   }
 }
