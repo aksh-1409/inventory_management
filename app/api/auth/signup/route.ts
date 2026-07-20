@@ -36,6 +36,12 @@ export async function POST(req: NextRequest) {
 
     const { name, email, password, warehouseId } = result.data
 
+    // Validate warehouse exists
+    const warehouse = await prisma.warehouse.findUnique({ where: { id: warehouseId } })
+    if (!warehouse) {
+      return NextResponse.json({ error: 'Selected warehouse not found' }, { status: 400 })
+    }
+
     // Check for duplicate email
     const existing = await prisma.user.findUnique({ where: { email } })
     if (existing) {
