@@ -170,7 +170,7 @@ export default function ProductsClient({ initialProducts, warehouses, userRole }
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h1 style={{ fontSize: 24, fontWeight: 600, color: 'var(--text-heading)' }}>Products</h1>
-          <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>{products.length} products in catalog</p>
+          <p style={{ fontSize: 14, color: 'var(--text-muted)', marginTop: 4 }}>{products.length} products in catalog</p>
         </div>
         {isAdmin && (
           <button onClick={openCreate} className="btn btn-primary" style={{ gap: 8 }}>
@@ -238,7 +238,7 @@ export default function ProductsClient({ initialProducts, warehouses, userRole }
                         </div>
                       </td>
                       <td data-label="SKU" style={{ padding: '16px 24px' }}>
-                        <span className="tabular" style={{ fontSize: 13, color: 'var(--accent)' }}>{product.sku}</span>
+                          <span className="tabular" style={{ fontSize: 14, color: 'var(--accent)' }}>{product.sku}</span>
                       </td>
                       <td data-label="Price" style={{ padding: '16px 24px', textAlign: 'right' }}>
                         <span className="tabular" style={{ fontSize: 14, fontWeight: 500 }}>${product.price.toFixed(2)}</span>
@@ -258,16 +258,16 @@ export default function ProductsClient({ initialProducts, warehouses, userRole }
                       {isAdmin && (
                         <td style={{ padding: '16px 24px', textAlign: 'right' }}>
                           <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
-                            <button onClick={() => openEdit(product)} className="btn btn-ghost" style={{ padding: '6px 8px', minHeight: 'auto', minWidth: 'auto' }} title="Edit">
+                            <button onClick={() => openEdit(product)} className="btn btn-ghost" style={{ padding: '8px 8px', minHeight: 'auto', minWidth: 'auto' }} title="Edit">
                               <Pencil style={{ width: 14, height: 14 }} />
                             </button>
                             {deleteConfirm === product.id ? (
                               <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                                <button onClick={() => handleDelete(product.id)} className="btn btn-danger" style={{ padding: '6px 10px', minHeight: 'auto', fontSize: 12, background: 'rgba(248,113,113,0.1)', color: 'var(--danger)' }}>Delete</button>
-                                <button onClick={() => setDeleteConfirm(null)} className="btn btn-ghost" style={{ padding: '6px 8px', minHeight: 'auto' }}>Cancel</button>
+                                <button onClick={() => handleDelete(product.id)} className="btn btn-danger" style={{ padding: '8px 12px', minHeight: 'auto', fontSize: 12, background: 'rgba(248,113,113,0.1)', color: 'var(--danger)' }}>Delete</button>
+                                <button onClick={() => setDeleteConfirm(null)} className="btn btn-ghost" style={{ padding: '8px 8px', minHeight: 'auto' }}>Cancel</button>
                               </div>
                             ) : (
-                              <button onClick={() => setDeleteConfirm(product.id)} className="btn btn-ghost" style={{ padding: '6px 8px', minHeight: 'auto', minWidth: 'auto' }} title="Delete">
+                              <button onClick={() => setDeleteConfirm(product.id)} className="btn btn-ghost" style={{ padding: '8px 8px', minHeight: 'auto', minWidth: 'auto' }} title="Delete">
                                 <Trash2 style={{ width: 14, height: 14 }} />
                               </button>
                             )}
@@ -289,7 +289,7 @@ export default function ProductsClient({ initialProducts, warehouses, userRole }
           <div onClick={closeModal} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.7)' }} />
           <div className="surface-2" style={{ position: 'relative', width: '100%', maxWidth: 480, borderRadius: 12, border: '1px solid var(--border)', padding: 24, maxHeight: '90vh', overflowY: 'auto' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-              <h2 style={{ fontSize: 18, fontWeight: 600, color: 'var(--text-heading)' }}>{editingProduct ? 'Edit Product' : 'New Product'}</h2>
+              <h2 style={{ fontSize: 20, fontWeight: 600, color: 'var(--text-heading)' }}>{editingProduct ? 'Edit Product' : 'New Product'}</h2>
               <button onClick={closeModal} className="btn btn-ghost" style={{ padding: 4, minHeight: 'auto', minWidth: 'auto' }}>
                 <X style={{ width: 18, height: 18 }} />
               </button>
@@ -298,37 +298,37 @@ export default function ProductsClient({ initialProducts, warehouses, userRole }
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 6 }}>SKU *</label>
+                  <label style={{ display: 'block', fontSize: 14, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 8 }}>SKU *</label>
                   <input className="input" value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} placeholder="AM-90-WHT-10" required />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 6 }}>Name *</label>
+                  <label style={{ display: 'block', fontSize: 14, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 8 }}>Name *</label>
                   <input className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Air Max 90" required />
                 </div>
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 6 }}>Description</label>
+                <label style={{ display: 'block', fontSize: 14, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 8 }}>Description</label>
                 <input className="input" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Classic Nike Air Max 90 in white, size 10" />
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 6 }}>Price *</label>
+                  <label style={{ display: 'block', fontSize: 14, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 8 }}>Price *</label>
                   <input className="input tabular" type="number" step="0.01" min="0" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder="120.00" required />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 6 }}>Cost Price</label>
+                  <label style={{ display: 'block', fontSize: 14, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 8 }}>Cost Price</label>
                   <input className="input tabular" type="number" step="0.01" min="0" value={form.costPrice} onChange={(e) => setForm({ ...form, costPrice: e.target.value })} placeholder="65.00" />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 6 }}>Reorder Point</label>
+                  <label style={{ display: 'block', fontSize: 14, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 8 }}>Reorder Point</label>
                   <input className="input tabular" type="number" min="0" value={form.reorderPoint} onChange={(e) => setForm({ ...form, reorderPoint: e.target.value })} placeholder="5" />
                 </div>
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 6 }}>Category</label>
+                <label style={{ display: 'block', fontSize: 14, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 8 }}>Category</label>
                 <input className="input" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} placeholder="Sneakers" />
               </div>
 

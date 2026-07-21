@@ -7,25 +7,29 @@ export const authConfig = {
   },
   session: {
     strategy: 'jwt',
-    maxAge: 30 * 24 * 60 * 60, // 30 days
+    maxAge: 7 * 24 * 60 * 60, // 7 days
+    updateAge: 24 * 60 * 60,   // refresh session every 24h
   },
   callbacks: {
-    // Expose role and id on the JWT token
-    async jwt({ token, user }) {
+    // Edge-safe jwt: just copy user fields into token. No DB calls.
+    // lib/auth.ts overrides this with full Prisma enrichment.
+    jwt({ token, user }) {
       if (user) {
-        token.id = user.id
+        token.id = user.id ?? (user as any).id
         token.role = (user as any).role
         token.warehouseId = (user as any).warehouseId ?? null
         token.warehouseName = (user as any).warehouseName ?? null
+        token.emailVerifiedAt = (user as any).emailVerifiedAt?.toString?.() ?? (user as any).emailVerifiedAt ?? null
       }
       return token
     },
-    async session({ session, token }) {
+    session({ session, token }) {
       if (token && session.user) {
         session.user.id = token.id as string
         session.user.role = token.role as 'ADMIN' | 'OPERATOR'
         session.user.warehouseId = (token.warehouseId as string | null) ?? null
         session.user.warehouseName = (token.warehouseName as string | null) ?? null
+        session.user.emailVerifiedAt = (token.emailVerifiedAt as string | null) ?? null
       }
       return session
     },
@@ -33,6 +37,11 @@ export const authConfig = {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user
       const isOnAuth = nextUrl.pathname.startsWith('/auth')
+      const isSetup = nextUrl.pathname === '/auth/setup'
+
+      if (isSetup) {
+        return true
+      }
 
       if (isOnAuth) {
         if (isLoggedIn) return Response.redirect(new URL('/dashboard', nextUrl))

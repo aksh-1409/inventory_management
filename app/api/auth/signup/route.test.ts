@@ -3,7 +3,7 @@ import { NextRequest } from 'next/server'
 
 const mocks = vi.hoisted(() => ({ checkRateLimit: vi.fn(), findUnique: vi.fn(), create: vi.fn(), hash: vi.fn(), whFindUnique: vi.fn() }))
 vi.mock('@/lib/rate-limit', () => ({ checkRateLimit: mocks.checkRateLimit }))
-vi.mock('@/lib/prisma', () => ({ prisma: { user: { findUnique: mocks.findUnique, create: mocks.create }, warehouse: { findUnique: mocks.whFindUnique } } }))
+vi.mock('@/lib/prisma', () => ({ prisma: { user: { findUnique: mocks.findUnique, create: mocks.create }, warehouse: { findUnique: mocks.whFindUnique }, verificationToken: { upsert: vi.fn().mockResolvedValue(undefined) } } }))
 vi.mock('bcryptjs', () => ({ default: { hash: mocks.hash } }))
 import { POST } from './route'
 

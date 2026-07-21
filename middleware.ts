@@ -63,6 +63,19 @@ export default auth(async function middleware(req: NextRequest & { auth: any }) 
       loginUrl.searchParams.set('callbackUrl', pathname)
       return applySecurityHeaders(NextResponse.redirect(loginUrl))
     }
+
+    // Redirect OAuth users who haven't completed setup (no warehouse assigned)
+    if (session?.user && !session.user.warehouseId && !isApiRoute && pathname !== '/auth/setup' && !pathname.startsWith('/auth/')) {
+      return applySecurityHeaders(NextResponse.redirect(new URL('/auth/setup', req.url)))
+    }
+
+    // Block write operations for unverified email users
+    const writeMethods = ['POST', 'PATCH', 'PUT', 'DELETE']
+    if (isApiRoute && writeMethods.includes(req.method) && session?.user && !session.user.emailVerifiedAt) {
+      return applySecurityHeaders(
+        NextResponse.json({ error: 'Please verify your email before making changes.' }, { status: 403 })
+      )
+    }
   }
 
   // Apply security headers to all responses
@@ -72,6 +85,6 @@ export default auth(async function middleware(req: NextRequest & { auth: any }) 
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|public/).*)',
+    '/((?!_next/static|_next/image|favicon.ico|public/|api/auth).*)',
   ],
 }

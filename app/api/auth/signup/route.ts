@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { checkRateLimit } from '@/lib/rate-limit'
+import { createVerificationToken } from '@/lib/verification'
 
 const signupSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -54,7 +55,7 @@ export async function POST(req: NextRequest) {
     // Hash password
     const passwordHash = await bcrypt.hash(password, 12)
 
-    // Create user (default role: OPERATOR)
+    // Create user unverified (default role: OPERATOR)
     const user = await prisma.user.create({
       data: {
         name,
@@ -62,6 +63,7 @@ export async function POST(req: NextRequest) {
         passwordHash,
         role: 'OPERATOR',
         warehouseId,
+        emailVerified: null,
       },
       select: {
         id: true,
@@ -72,7 +74,15 @@ export async function POST(req: NextRequest) {
       },
     })
 
-    return NextResponse.json({ user }, { status: 201 })
+    const token = await createVerificationToken(email)
+    const verifyUrl = `${req.nextUrl.origin}/api/auth/verify?token=${token}`
+    console.log(`[VERIFICATION] ${verifyUrl}`)
+
+    return NextResponse.json({
+      message: 'Account created. Please verify your email before logging in.',
+      user,
+      devUrl: verifyUrl,
+    }, { status: 201 })
   } catch (error) {
     console.error('[SIGNUP_ERROR]', error)
     return NextResponse.json(

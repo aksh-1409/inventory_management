@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, Suspense } from 'react'
-import { signIn } from 'next-auth/react'
+import { useState, useEffect, Suspense } from 'react'
+import { signIn, getProviders } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Eye, EyeOff, Package, Loader2, AlertCircle } from 'lucide-react'
@@ -21,6 +21,15 @@ function LoginForm() {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [oauthProviders, setOauthProviders] = useState<string[]>([])
+
+  useEffect(() => {
+    getProviders().then(providers => {
+      if (providers) {
+        setOauthProviders(Object.keys(providers).filter(p => p !== 'credentials'))
+      }
+    })
+  }, [])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -52,13 +61,12 @@ function LoginForm() {
   const inputStyle: React.CSSProperties = {
     width: '100%',
     background: 'rgba(255,255,255,0.05)',
-    border: '1px solid rgba(255,255,255,0.1)',
+    border: '1px solid var(--border)',
     borderRadius: 8,
-    padding: '10px 16px',
+    padding: '8px 16px',
     color: 'white',
     fontSize: 14,
-    outline: 'none',
-    transition: 'border-color 200ms ease, box-shadow 200ms ease',
+    transition: 'border-color var(--dur-transition) var(--ease), box-shadow var(--dur-transition) var(--ease)',
   }
 
   return (
@@ -66,8 +74,8 @@ function LoginForm() {
       background: 'rgba(255,255,255,0.05)',
       backdropFilter: 'blur(24px)',
       WebkitBackdropFilter: 'blur(24px)',
-      border: '1px solid rgba(255,255,255,0.1)',
-      borderRadius: 16,
+      border: '1px solid var(--border)',
+      borderRadius: 12,
       padding: 32,
       boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)',
     }}>
@@ -217,7 +225,7 @@ function LoginForm() {
             border: 'none',
             color: 'white',
             fontWeight: 500,
-            padding: '10px 16px',
+            padding: '8px 16px',
             borderRadius: 8,
             fontSize: 14,
             cursor: loading ? 'not-allowed' : 'pointer',
@@ -248,7 +256,44 @@ function LoginForm() {
         </button>
       </form>
 
-      <p style={{ marginTop: 24, textAlign: 'center', fontSize: 14, color: 'rgba(161,161,170,0.6)' }}>
+      {oauthProviders.length > 0 && (
+        <>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 20, marginBottom: 4 }}>
+            <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.1)' }} />
+            <span style={{ fontSize: 12, color: 'rgba(161,161,170,0.6)', whiteSpace: 'nowrap' }}>or continue with</span>
+            <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.1)' }} />
+          </div>
+          <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+            {oauthProviders.map(provider => (
+              <button
+                key={provider}
+                type="button"
+                onClick={async () => {
+                  setError(null)
+                  setLoading(true)
+                  const res = await signIn(provider, { redirect: false })
+                  setLoading(false)
+                  if (res?.error) setError(res.error)
+                  else if (res?.url) window.location.href = res.url
+                }}
+                style={{
+                  flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  padding: '8px 12px', borderRadius: 8, fontSize: 13, fontWeight: 500, cursor: 'pointer',
+                  background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+                  color: 'rgba(212,212,216,1)', transition: 'all 200ms ease',
+                  textTransform: 'capitalize',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'white' }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = 'rgba(212,212,216,1)' }}
+              >
+                {provider}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+
+      <p style={{ marginTop: 20, textAlign: 'center', fontSize: 14, color: 'rgba(161,161,170,0.6)' }}>
         Don&apos;t have an account?{' '}
         <Link
           href="/auth/signup"

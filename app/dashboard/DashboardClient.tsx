@@ -48,9 +48,9 @@ export default function DashboardClient({ stats, products, warehouses, matrix, p
 
       <div style={{ position: 'relative', zIndex: 1 }}>
         <div style={{ marginBottom: 32, paddingTop: 8 }}>
-          <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 6 }}>
+          <p style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 8 }}>
             Welcome back, <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{userName}</span>
-            <span style={{ marginLeft: 8, fontSize: 11, fontWeight: 500, padding: '2px 8px', borderRadius: 6, background: 'rgba(255,255,255,0.06)', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{userRole}</span>
+            <span style={{ marginLeft: 8, fontSize: 12, fontWeight: 500, padding: '4px 8px', borderRadius: 8, background: 'rgba(255,255,255,0.06)', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{userRole}</span>
           </p>
           <h1 style={{ fontSize: 'clamp(28px, 4vw, 40px)', fontWeight: 400, color: 'var(--text-heading)', letterSpacing: '-0.02em', lineHeight: 1.15 }}>Inventory overview</h1>
         </div>
@@ -67,8 +67,8 @@ export default function DashboardClient({ stats, products, warehouses, matrix, p
                 <Icon style={{ width: 20, height: 20, color: accent }} />
               </div>
               <div>
-                <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</p>
-                <p className="tabular" style={{ fontSize: 28, fontWeight: 600, color: 'var(--text-heading)', lineHeight: 1 }}>{value}</p>
+                <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</p>
+                <p className="tabular" style={{ fontSize: 32, fontWeight: 600, color: 'var(--text-heading)', lineHeight: 1 }}>{value}</p>
               </div>
             </div>
           ))}
@@ -77,7 +77,7 @@ export default function DashboardClient({ stats, products, warehouses, matrix, p
         {/* Inventory Matrix */}
         <div className="card" style={{ overflow: 'hidden', marginBottom: 24 }}>
           <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--border)' }}>
-            <h2 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-heading)' }}>Stock Matrix</h2>
+            <h2 style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-heading)' }}>Stock Matrix</h2>
             <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>Products x Warehouses</p>
           </div>
           <div style={{ overflowX: 'auto' }}>
@@ -94,8 +94,8 @@ export default function DashboardClient({ stats, products, warehouses, matrix, p
                 {products.map((p) => (
                   <tr key={p.id} style={{ borderBottom: '1px solid var(--border)' }}>
                     <td style={{ padding: '12px 24px', position: 'sticky', left: 0, background: 'var(--bg-surface-1)', zIndex: 1 }}>
-                      <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-heading)' }}>{p.name}</p>
-                      <p className="tabular" style={{ fontSize: 11, color: 'var(--accent)' }}>{p.sku}</p>
+                      <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-heading)' }}>{p.name}</p>
+                      <p className="tabular" style={{ fontSize: 12, color: 'var(--accent)' }}>{p.sku}</p>
                     </td>
                     {matrixWarehouses.map((w) => {
                       const cell = matrix[p.id]?.[w.id]
@@ -120,17 +120,17 @@ export default function DashboardClient({ stats, products, warehouses, matrix, p
           <div className="card" style={{ padding: 20 }}>
             <h3 style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-heading)', marginBottom: 16 }}>Active Transfers</h3>
             {pendingTransfers.length === 0 ? (
-              <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>No active transfers</p>
+              <p style={{ fontSize: 14, color: 'var(--text-muted)' }}>No active transfers</p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {pendingTransfers.map((t) => (
                   <div key={t.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
                     <div>
-                      <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-heading)' }}>{t.product.name}</p>
-                      <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>{(t.fromWarehouse?.name ?? '?')} → {t.toWarehouse.name}</p>
+                      <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-heading)' }}>{t.product.name}</p>
+                      <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>{(t.fromWarehouse?.name ?? '?')} → {t.toWarehouse.name}</p>
                     </div>
                     <div style={{ textAlign: 'right' }}>
-                      <span className="badge" style={{ background: t.status === 'PENDING' ? 'rgba(251,191,36,0.12)' : 'rgba(99,102,241,0.12)', color: t.status === 'PENDING' ? 'var(--warning)' : 'var(--accent)', fontSize: 11 }}>{t.status}</span>
+                      <span className="badge" style={{ background: t.status === 'PENDING' ? 'rgba(251,191,36,0.12)' : 'rgba(99,102,241,0.12)', color: t.status === 'PENDING' ? 'var(--warning)' : 'var(--accent)', fontSize: 12 }}>{t.status}</span>
                       <p className="tabular" style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>x{t.quantityInitiated}</p>
                     </div>
                   </div>
@@ -143,24 +143,24 @@ export default function DashboardClient({ stats, products, warehouses, matrix, p
           <div className="card" style={{ padding: 20 }}>
             <h3 style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-heading)', marginBottom: 16 }}>Recent Activity</h3>
             {recentTransactions.length === 0 ? (
-              <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>No recent activity</p>
+              <p style={{ fontSize: 14, color: 'var(--text-muted)' }}>No recent activity</p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {recentTransactions.slice(0, 8).map((t) => {
                   const cfg = TX_ICONS[t.type] || TX_ICONS.ADJUSTMENT
                   const Icon = cfg.icon
                   return (
-                    <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
-                      <div style={{ width: 28, height: 28, borderRadius: 6, background: `${cfg.color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
+                      <div style={{ width: 32, height: 32, borderRadius: 8, background: `${cfg.color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                         <Icon style={{ width: 14, height: 14, color: cfg.color }} />
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <p style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-heading)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {t.product.name} @ {t.warehouse.name}
                         </p>
-                        <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>{t.type.replace('_', ' ')}</p>
+                        <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>{t.type.replace('_', ' ')}</p>
                       </div>
-                      <span className="tabular" style={{ fontSize: 13, fontWeight: 600, color: t.delta > 0 ? 'var(--success)' : 'var(--danger)', flexShrink: 0 }}>
+                      <span className="tabular" style={{ fontSize: 14, fontWeight: 600, color: t.delta > 0 ? 'var(--success)' : 'var(--danger)', flexShrink: 0 }}>
                         {t.delta > 0 ? '+' : ''}{t.delta}
                       </span>
                     </div>

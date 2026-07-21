@@ -73,16 +73,15 @@ export default function SignupPage() {
   const inputStyle: React.CSSProperties = {
     width: '100%',
     background: 'rgba(255,255,255,0.05)',
-    border: '1px solid rgba(255,255,255,0.1)',
+    border: '1px solid var(--border)',
     borderRadius: 8,
-    padding: '10px 16px',
+    padding: '8px 16px',
     color: 'white',
     fontSize: 14,
-    outline: 'none',
   }
 
   const labelStyle: React.CSSProperties = {
-    display: 'block', fontSize: 14, fontWeight: 500, color: 'rgba(212,212,216,1)', marginBottom: 6,
+    display: 'block', fontSize: 14, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 8,
   }
 
   return (
@@ -100,7 +99,7 @@ export default function SignupPage() {
           <span style={{ fontSize: 24, fontWeight: 700, color: 'white', letterSpacing: '-0.01em' }}>StockPilot</span>
         </div>
 
-        <div style={{ background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(24px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, padding: 32, boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}>
+        <div style={{ background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(24px)', border: '1px solid var(--border)', borderRadius: 12, padding: 32, boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}>
           <div style={{ marginBottom: 24 }}>
             <h1 style={{ fontSize: 24, fontWeight: 600, color: 'white', marginBottom: 4 }}>Create an account</h1>
             <p style={{ fontSize: 14, color: 'rgba(161,161,170,1)' }}>Register as an <span style={{ color: '#a78bfa', fontWeight: 500 }}>Operator</span> and select your warehouse.</p>
@@ -143,7 +142,7 @@ export default function SignupPage() {
                 <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
                   <div style={{ display: 'flex', gap: 4, flex: 1 }}>
                     {[1, 2, 3].map(level => (
-                      <div key={level} style={{ height: 4, flex: 1, borderRadius: 2, background: passwordStrength >= level ? (level === 1 ? '#ef4444' : level === 2 ? '#eab308' : '#22c55e') : 'rgba(255,255,255,0.1)', transition: 'background 300ms' }} />
+                      <div key={level} style={{ height: 4, flex: 1, borderRadius: 2, background: passwordStrength >= level ? (level === 1 ? '#ef4444' : level === 2 ? '#eab308' : '#22c55e') : 'rgba(255,255,255,0.1)', transition: 'background 300ms var(--ease)' }} />
                     ))}
                   </div>
                   <span style={{ fontSize: 11, color: 'rgba(161,161,170,0.6)' }}>{strengthLabels[passwordStrength]}</span>
@@ -160,7 +159,7 @@ export default function SignupPage() {
               <p style={{ fontSize: 11, color: 'rgba(161,161,170,0.5)', marginTop: 4 }}>You'll only see inventory and transfers for this warehouse.</p>
             </div>
 
-            <button type="submit" disabled={loading || success} style={{ width: '100%', background: 'linear-gradient(135deg, #7c3aed, #4f46e5)', border: 'none', color: 'white', fontWeight: 500, padding: '10px 16px', borderRadius: 8, fontSize: 14, cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.5 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+            <button type="submit" disabled={loading || success} style={{ width: '100%', background: 'linear-gradient(135deg, #7c3aed, #4f46e5)', border: 'none', color: 'white', fontWeight: 500, padding: '8px 16px', borderRadius: 8, fontSize: 14, cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.5 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
               {loading ? <><Loader2 style={{ width: 16, height: 16, animation: 'spin 1s linear infinite' }} /> Creating account...</> : 'Create account'}
             </button>
           </form>

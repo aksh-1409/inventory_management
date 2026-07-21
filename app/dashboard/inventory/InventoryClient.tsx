@@ -97,7 +97,7 @@ export default function InventoryClient({ initialItems, userRole }: Props) {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h1 style={{ fontSize: 24, fontWeight: 600, color: 'var(--text-heading)' }}>Inventory</h1>
-          <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>{items.length} items across all warehouses</p>
+          <p style={{ fontSize: 14, color: 'var(--text-muted)', marginTop: 4 }}>{items.length} items across all warehouses</p>
         </div>
       </div>
 
@@ -158,7 +158,7 @@ export default function InventoryClient({ initialItems, userRole }: Props) {
                         </div>
                       </td>
                       <td data-label="Warehouse" style={{ padding: '16px 24px' }}>
-                        <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{item.warehouse.name}</span>
+                          <span style={{ fontSize: 14, color: 'var(--text-secondary)' }}>{item.warehouse.name}</span>
                       </td>
                       <td data-label="Stock" style={{ padding: '16px 24px', textAlign: 'center' }}>
                         <span className="tabular" style={{ fontSize: 20, fontWeight: 600, color }}>{item.quantity}</span>
@@ -167,7 +167,7 @@ export default function InventoryClient({ initialItems, userRole }: Props) {
                         {item.damaged > 0 ? (
                           <span className="tabular" style={{ fontSize: 14, fontWeight: 500, color: 'var(--danger)' }}>{item.damaged}</span>
                         ) : (
-                          <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>-</span>
+                          <span style={{ fontSize: 14, color: 'var(--text-muted)' }}>-</span>
                         )}
                       </td>
                       <td data-label="Reorder At" style={{ padding: '16px 24px', textAlign: 'center' }}>
@@ -179,7 +179,7 @@ export default function InventoryClient({ initialItems, userRole }: Props) {
                       {isAdmin && (
                         <td style={{ padding: '16px 24px', textAlign: 'center' }}>
                           {adjusting === item.id ? (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'center', minWidth: 160 }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center', minWidth: 160 }}>
                               <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
                                 <input
                                   className="input tabular"
@@ -199,14 +199,14 @@ export default function InventoryClient({ initialItems, userRole }: Props) {
                                 />
                               </div>
                               <div style={{ display: 'flex', gap: 4 }}>
-                                <button onClick={() => handleAdjust(item.id)} disabled={loading} style={{ padding: '4px 8px', fontSize: 11, background: 'var(--success)', color: '#022c22', border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 500 }}>
+                                <button onClick={() => handleAdjust(item.id)} disabled={loading} style={{ padding: '4px 8px', fontSize: 12, background: 'var(--success)', color: '#022c22', border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 500 }}>
                                   {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Apply'}
                                 </button>
-                                <button onClick={() => setAdjusting(null)} style={{ padding: '4px 8px', fontSize: 11, background: 'rgba(255,255,255,0.06)', color: 'var(--text-secondary)', border: 'none', borderRadius: 6, cursor: 'pointer' }}>Cancel</button>
+                                <button onClick={() => setAdjusting(null)} style={{ padding: '4px 8px', fontSize: 12, background: 'rgba(255,255,255,0.06)', color: 'var(--text-secondary)', border: 'none', borderRadius: 6, cursor: 'pointer' }}>Cancel</button>
                               </div>
                             </div>
                           ) : (
-                            <button onClick={() => openAdjust(item)} className="btn btn-ghost" style={{ padding: '6px 12px', minHeight: 'auto', fontSize: 12, gap: 4 }}>
+                            <button onClick={() => openAdjust(item)} className="btn btn-ghost" style={{ padding: '8px 12px', minHeight: 'auto', fontSize: 12, gap: 4 }}>
                               Adjust
                             </button>
                           )}
