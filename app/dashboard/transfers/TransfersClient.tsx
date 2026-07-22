@@ -1,9 +1,11 @@
 'use client'
 
 import { useState, useEffect, useMemo, useOptimistic, useTransition } from 'react'
+import { SkeletonCard } from '@/components/ui/Skeleton'
 import { useSearchParams } from 'next/navigation'
 import { ArrowLeftRight, Plus, X, Loader2, Truck, CheckCircle, Hand } from 'lucide-react'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { ErrorState } from '@/components/ui/ErrorState'
 import { SearchInput } from '@/components/ui/SearchInput'
 import { PaginationBar } from '@/components/ui/PaginationBar'
 import { CursorPagination } from '@/components/ui/CursorPagination'
@@ -104,6 +106,8 @@ export default function TransfersClient({ initialTransfers, total, page, pageSiz
   const [receiveErrors, setReceiveErrors] = useState<Record<string, string>>({})
   const [shipForm, setShipForm] = useState({ trackingNumber: '' })
   const [shipErrors, setShipErrors] = useState<Record<string, string>>({})
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
 
   const isAdmin = userRole === 'ADMIN'
   const userWarehouseName = warehouses.find(w => w.id === userWarehouseId)?.name || ''
@@ -114,6 +118,7 @@ export default function TransfersClient({ initialTransfers, total, page, pageSiz
       setNextCursor(initialNextCursor ?? null)
       setHasMore(initialHasMore ?? false)
     }
+    setLoading(false)
   }, [initialTransfers])
 
   const tabbed = useMemo(() => {
@@ -356,9 +361,10 @@ export default function TransfersClient({ initialTransfers, total, page, pageSiz
       setTransfers((prev) => [...prev, ...data.transfers])
       setNextCursor(data.nextCursor)
       setHasMore(data.hasMore)
-    } catch (err: any) {
-      showToast(err.message || 'Failed to load more', 'error')
-    } finally {
+      } catch (err: any) {
+        showToast(err.message || 'Failed to load more', 'error')
+        if (transfers.length === 0) setError(err.message || 'Failed to load more')
+      } finally {
       setLoadingMore(false)
     }
   }
@@ -412,7 +418,13 @@ export default function TransfersClient({ initialTransfers, total, page, pageSiz
         <SearchInput placeholder="Search transfers…" />
       </div>
 
-      {tabbed.length === 0 ? (
+      {loading ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {Array.from({ length: 3 }).map((_, i) => <SkeletonCard key={i} />)}
+        </div>
+      ) : error && tabbed.length === 0 ? (
+        <ErrorState message={error} onRetry={() => { setError(null); setTransfers(initialTransfers) }} />
+      ) : tabbed.length === 0 ? (
         <EmptyState
           icon={ArrowLeftRight}
           title={tab === 'incoming' ? (qParam ? 'No incoming requests match your search' : 'No incoming requests') : tab === 'fulfill' ? (qParam ? 'No requests to fulfill match your search' : 'No requests to fulfill') : (qParam ? 'No transfers match your search' : 'No active transfers')}

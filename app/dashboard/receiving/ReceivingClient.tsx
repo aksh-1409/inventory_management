@@ -1,8 +1,10 @@
 'use client'
 
-import { useState, useMemo, useOptimistic, useTransition } from 'react'
+import { useState, useMemo, useOptimistic, useTransition, useEffect } from 'react'
 import { Truck, Plus, Search, X, Loader2 } from 'lucide-react'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { ErrorState } from '@/components/ui/ErrorState'
+import { SkeletonRow } from '@/components/ui/Skeleton'
 import { useToast } from '@/components/ui/Toast'
 import { CustomSelect } from '@/components/ui/CustomSelect'
 import { ReceivingReportDownload } from '@/components/pdf/TransferPDFs'
@@ -47,8 +49,12 @@ export default function ReceivingClient({ initialReceipts, products, warehouses,
   const [showModal, setShowModal] = useState(false)
   const [form, setForm] = useState({ productId: '', warehouseId: '', supplierId: '', quantity: '', unitCost: '', notes: '' })
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
 
   const isAdmin = userRole === 'ADMIN'
+
+  useEffect(() => { setLoading(false) }, [])
 
   const filtered = useMemo(() => {
     if (!search) return optimisticReceipts
@@ -164,7 +170,19 @@ export default function ReceivingClient({ initialReceipts, products, warehouses,
         )}
       </div>
 
-      {filtered.length === 0 ? (
+      {loading ? (
+        <div className="card" style={{ overflow: 'hidden' }}>
+          <div style={{ overflowX: 'auto' }}>
+            <table className="responsive-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <tbody>
+                {Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : error && filtered.length === 0 ? (
+        <ErrorState message={error} onRetry={() => { setError(null); setReceipts(initialReceipts) }} />
+      ) : filtered.length === 0 ? (
         <EmptyState icon={Truck} title="No receipts yet" description={search ? 'Try a different search.' : 'Record your first shipment receipt.'} />
       ) : (
         <div className="card" style={{ overflow: 'hidden', opacity: isPending ? 0.7 : 1 }}>

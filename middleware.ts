@@ -2,8 +2,13 @@ import NextAuth from 'next-auth'
 import { authConfig } from '@/lib/auth.config'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { setCsrfCookie, validateCsrf } from '@/lib/csrf'
 
 // Security headers applied to every response
+const SCRIPT_SRC = process.env.NODE_ENV === 'development'
+  ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
+  : "script-src 'self' 'unsafe-inline'"
+
 const SECURITY_HEADERS = {
   'X-DNS-Prefetch-Control': 'on',
   'Strict-Transport-Security': 'max-age=63072000; includeSubDomains; preload',
@@ -13,7 +18,7 @@ const SECURITY_HEADERS = {
   'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
   'Content-Security-Policy': [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
+    SCRIPT_SRC,
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com",
     "img-src 'self' data: blob:",
@@ -50,13 +55,14 @@ export default auth(async function middleware(req: NextRequest & { auth: any }) 
   }
 
   // --- Protected routes: require any authenticated user ---
+  let hasBearerToken = false
   if (pathname.startsWith('/dashboard') || pathname.startsWith('/api/v1')) {
     // Public: warehouses GET (needed for signup)
     const isPublicWarehousesGet = pathname === '/api/v1/warehouses' && req.method === 'GET'
 
     // API key auth: allow Bearer token to bypass session check for API routes
     const isApiRoute = pathname.startsWith('/api/v1')
-    const hasBearerToken = isApiRoute && req.headers.get('authorization')?.startsWith('Bearer sp_live_')
+    hasBearerToken = isApiRoute && !!req.headers.get('authorization')?.startsWith('Bearer sp_live_')
 
     if (!isPublicWarehousesGet && !hasBearerToken && !session) {
       const loginUrl = new URL('/auth/login', req.url)
@@ -71,9 +77,17 @@ export default auth(async function middleware(req: NextRequest & { auth: any }) 
     }
   }
 
+  // CSRF check for mutating v1 API routes (only for cookie-based auth, skip Bearer token)
+  const isMutating = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)
+  if (pathname.startsWith('/api/v1') && isMutating && !hasBearerToken && session) {
+    if (!validateCsrf(req)) {
+      return applySecurityHeaders(NextResponse.json({ error: 'CSRF validation failed' }, { status: 403 }))
+    }
+  }
+
   // Apply security headers to all responses
   const response = NextResponse.next()
-  return applySecurityHeaders(response)
+  return applySecurityHeaders(setCsrfCookie(response))
 })
 
 export const config = {

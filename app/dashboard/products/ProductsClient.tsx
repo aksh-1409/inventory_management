@@ -1,9 +1,11 @@
 'use client'
 
 import { useState, useEffect, useOptimistic, useTransition, useCallback } from 'react'
+import { SkeletonRow } from '@/components/ui/Skeleton'
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import { Package, Plus, Pencil, Trash2, RotateCcw, X, Loader2 } from 'lucide-react'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { ErrorState } from '@/components/ui/ErrorState'
 import { SearchInput } from '@/components/ui/SearchInput'
 import { PaginationBar } from '@/components/ui/PaginationBar'
 import { CursorPagination } from '@/components/ui/CursorPagination'
@@ -90,6 +92,8 @@ export default function ProductsClient({ initialProducts, total, page, pageSize,
   const [form, setForm] = useState(emptyForm)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
 
   const isAdmin = userRole === 'ADMIN'
 
@@ -99,6 +103,7 @@ export default function ProductsClient({ initialProducts, total, page, pageSize,
       setNextCursor(initialNextCursor ?? null)
       setHasMore(initialHasMore ?? false)
     }
+    setLoading(false)
   }, [initialProducts, cursorMode ? initialNextCursor : undefined, cursorMode ? initialHasMore : undefined])
 
   function openCreate() {
@@ -180,6 +185,7 @@ export default function ProductsClient({ initialProducts, total, page, pageSize,
           closeModal()
         } catch (err: any) {
           showToast(err.message || 'Something went wrong', 'error')
+          if (products.length === 0) setError(err.message || 'Something went wrong')
         }
       })
     } else {
@@ -199,6 +205,7 @@ export default function ProductsClient({ initialProducts, total, page, pageSize,
           closeModal()
         } catch (err: any) {
           showToast(err.message || 'Failed to create', 'error')
+          if (products.length === 0) setError(err.message || 'Failed to create')
         }
       })
     }
@@ -215,7 +222,7 @@ export default function ProductsClient({ initialProducts, total, page, pageSize,
           throw new Error(data.error)
         }
         setProducts((prev) => prev.filter((p) => p.id !== id))
-        showToast('Product deleted')
+        showToast('Product deleted', 'success', () => handleRestore(id))
       } catch (err: any) {
         showToast(err.message || 'Failed to delete', 'error')
       }
@@ -252,9 +259,10 @@ export default function ProductsClient({ initialProducts, total, page, pageSize,
       setProducts((prev) => [...prev, ...data.products])
       setNextCursor(data.nextCursor)
       setHasMore(data.hasMore)
-    } catch (err: any) {
-      showToast(err.message || 'Failed to load more', 'error')
-    } finally {
+      } catch (err: any) {
+        showToast(err.message || 'Failed to load more', 'error')
+        if (products.length === 0) setError(err.message || 'Failed to load more')
+      } finally {
       setLoadingMore(false)
     }
   }
@@ -302,7 +310,19 @@ export default function ProductsClient({ initialProducts, total, page, pageSize,
         <SearchInput placeholder="Search by name, SKU, or category…" />
       </div>
 
-      {optimisticProducts.length === 0 && !showDeleted ? (
+      {loading ? (
+        <div className="card" style={{ overflow: 'hidden' }}>
+          <div style={{ overflowX: 'auto' }}>
+            <table className="responsive-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <tbody>
+                {Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : error && optimisticProducts.length === 0 ? (
+        <ErrorState message={error} onRetry={() => { setError(null); router.refresh() }} />
+      ) : optimisticProducts.length === 0 && !showDeleted ? (
         <EmptyState
           icon={Package}
           title={qParam ? 'No products match your search' : 'No products found'}

@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react'
 import { Webhook, Plus, Search, X, Loader2, Trash2, Zap } from 'lucide-react'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { ErrorState } from '@/components/ui/ErrorState'
 import { useToast } from '@/components/ui/Toast'
 
 interface WebhookSub {
@@ -17,6 +18,9 @@ interface WebhookSub {
 
 interface Props {
   initialWebhooks: WebhookSub[]
+  total?: number
+  page?: number
+  pageSize?: number
 }
 
 const EVENT_TYPES = [
@@ -31,6 +35,8 @@ export default function WebhooksClient({ initialWebhooks }: Props) {
   const [search, setSearch] = useState('')
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [loading, setLoading] = useState(false)
+
+  const [error, setError] = useState<string | null>(null)
 
   const [createForm, setCreateForm] = useState({
     eventType: '',
@@ -135,7 +141,9 @@ export default function WebhooksClient({ initialWebhooks }: Props) {
         )}
       </div>
 
-      {filtered.length === 0 ? (
+      {error && filtered.length === 0 ? (
+        <ErrorState message={error} onRetry={() => { setError(null); setWebhooks(initialWebhooks) }} />
+      ) : filtered.length === 0 ? (
         <EmptyState
           icon={Webhook}
           title="No webhooks"

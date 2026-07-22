@@ -38,7 +38,7 @@ export async function PATCH(
     }
     const { user } = authResult
 
-    if (!hasScope(user, 'customers:write')) {
+    if (!hasScope(user, 'customers:write') || user.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
@@ -81,7 +81,7 @@ export async function DELETE(
     }
     const { user } = authResult
 
-    if (!hasScope(user, 'customers:write')) {
+    if (!hasScope(user, 'customers:write') || user.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 

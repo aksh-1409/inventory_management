@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react'
 import { Key, Plus, Search, X, Loader2, Trash2, Eye, EyeOff, Copy } from 'lucide-react'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { ErrorState } from '@/components/ui/ErrorState'
 import { useToast } from '@/components/ui/Toast'
 
 interface ApiKey {
@@ -18,6 +19,9 @@ interface ApiKey {
 
 interface Props {
   initialKeys: ApiKey[]
+  total?: number
+  page?: number
+  pageSize?: number
 }
 
 export default function ApiKeysClient({ initialKeys }: Props) {
@@ -27,6 +31,7 @@ export default function ApiKeysClient({ initialKeys }: Props) {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [loading, setLoading] = useState(false)
   const [newKeyVisible, setNewKeyVisible] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   const [createForm, setCreateForm] = useState({
     name: '',
@@ -145,7 +150,9 @@ export default function ApiKeysClient({ initialKeys }: Props) {
         )}
       </div>
 
-      {filtered.length === 0 ? (
+      {error && filtered.length === 0 ? (
+        <ErrorState message={error} onRetry={() => { setError(null); setKeys(initialKeys) }} />
+      ) : filtered.length === 0 ? (
         <EmptyState
           icon={Key}
           title="No API keys"

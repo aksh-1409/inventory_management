@@ -1,17 +1,21 @@
 export function SkeletonRow() {
   return (
-    <div className="flex items-center justify-between p-4 border-b border-[var(--border)] w-full">
-      <div className="flex items-center gap-3 w-1/3">
-        <div className="skeleton w-8 h-8 flex-shrink-0" />
-        <div className="space-y-2 w-full">
-          <div className="skeleton h-4 w-3/4" />
-          <div className="skeleton h-3 w-1/2" />
+    <tr className="border-b border-[var(--border)]">
+      <td colSpan={6} style={{ padding: '16px 24px' }}>
+        <div className="flex items-center justify-between w-full">
+          <div className="flex items-center gap-3 w-1/3">
+            <div className="skeleton w-8 h-8 flex-shrink-0" />
+            <div className="space-y-2 w-full">
+              <div className="skeleton h-4 w-3/4" />
+              <div className="skeleton h-3 w-1/2" />
+            </div>
+          </div>
+          <div className="skeleton h-4 w-20 hidden md:block" />
+          <div className="skeleton h-6 w-16" />
+          <div className="skeleton h-4 w-12 hidden lg:block" />
         </div>
-      </div>
-      <div className="skeleton h-4 w-20 hidden md:block" />
-      <div className="skeleton h-6 w-16" />
-      <div className="skeleton h-4 w-12 hidden lg:block" />
-    </div>
+      </td>
+    </tr>
   )
 }
 

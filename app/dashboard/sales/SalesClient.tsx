@@ -1,9 +1,11 @@
 'use client'
 
 import { useState, useEffect, useRef, useOptimistic, useTransition } from 'react'
+import { SkeletonRow } from '@/components/ui/Skeleton'
 import { useSearchParams } from 'next/navigation'
 import { ShoppingCart, Plus, X, Loader2, UserPlus, Phone, Check } from 'lucide-react'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { ErrorState } from '@/components/ui/ErrorState'
 import { SearchInput } from '@/components/ui/SearchInput'
 import { PaginationBar } from '@/components/ui/PaginationBar'
 import { useToast } from '@/components/ui/Toast'
@@ -57,13 +59,15 @@ export default function SalesClient({ initialSales, total, page, pageSize, produ
 
   const [phoneInput, setPhoneInput] = useState('')
   const [matchedCustomer, setMatchedCustomer] = useState<Customer | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
   const [showPhoneDropdown, setShowPhoneDropdown] = useState(false)
   const [creatingInline, setCreatingInline] = useState(false)
   const [newCustomerName, setNewCustomerName] = useState('')
   const [newCustomerEmail, setNewCustomerEmail] = useState('')
   const phoneRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => { setSales(initialSales) }, [initialSales])
+  useEffect(() => { setSales(initialSales); setLoading(false) }, [initialSales])
 
   const phoneMatches = existingCustomers.filter((c) => c.phone && phoneInput && c.phone.toLowerCase().includes(phoneInput.toLowerCase()))
 
@@ -224,7 +228,19 @@ export default function SalesClient({ initialSales, total, page, pageSize, produ
         <SearchInput placeholder="Search sales…" />
       </div>
 
-      {optimisticSales.length === 0 ? (
+      {loading ? (
+        <div className="card" style={{ overflow: 'hidden' }}>
+          <div style={{ overflowX: 'auto' }}>
+            <table className="responsive-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <tbody>
+                {Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : error && optimisticSales.length === 0 ? (
+        <ErrorState message={error} onRetry={() => { setError(null); setSales(initialSales) }} />
+      ) : optimisticSales.length === 0 ? (
         <EmptyState icon={ShoppingCart} title={qParam ? 'No sales match your search' : 'No sales yet'} description={qParam ? 'Try a different search term or clear the filter.' : 'Record your first sale to get started.'} />
       ) : (
         <>

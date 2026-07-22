@@ -1,8 +1,10 @@
 'use client'
 
 import { useState, useEffect, useOptimistic, useTransition, useCallback } from 'react'
+import { SkeletonCard } from '@/components/ui/Skeleton'
 import { Truck, Plus, Pencil, Trash2, RotateCcw, X, Loader2, Mail, Phone } from 'lucide-react'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { ErrorState } from '@/components/ui/ErrorState'
 import { SearchInput } from '@/components/ui/SearchInput'
 import { PaginationBar } from '@/components/ui/PaginationBar'
 import { useToast } from '@/components/ui/Toast'
@@ -58,12 +60,14 @@ export default function SuppliersClient({ initialSuppliers, total, page, pageSiz
   const [form, setForm] = useState(emptyForm)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
 
   const isAdmin = userRole === 'ADMIN'
 
   const clearSearch = useCallback(() => router.push(pathname), [router, pathname])
 
-  useEffect(() => { setSuppliers(initialSuppliers) }, [initialSuppliers])
+  useEffect(() => { setSuppliers(initialSuppliers); setLoading(false) }, [initialSuppliers])
 
   function openCreate() { setEditing(null); setForm(emptyForm); setErrors({}); setShowModal(true) }
   function openEdit(s: SupplierData) { setEditing(s); setForm({ name: s.name, contactName: s.contactName || '', email: s.email || '', phone: s.phone || '' }); setErrors({}); setShowModal(true) }
@@ -101,7 +105,7 @@ export default function SuppliersClient({ initialSuppliers, total, page, pageSiz
           setSuppliers((prev) => prev.map((s) => (s.id === editing.id ? { ...s, ...data.supplier } : s)))
           showToast('Supplier updated')
           closeModal()
-        } catch (err: any) { showToast(err.message || 'Something went wrong', 'error') }
+        } catch (err: any) { showToast(err.message || 'Something went wrong', 'error'); if (suppliers.length === 0) setError(err.message || 'Something went wrong') }
       })
     } else {
       startTransition(async () => {
@@ -126,7 +130,7 @@ export default function SuppliersClient({ initialSuppliers, total, page, pageSiz
         const res = await fetch(`/api/v1/suppliers/${id}`, { method: 'DELETE' })
         if (!res.ok) { const data = await res.json(); throw new Error(data.error) }
         setSuppliers((prev) => prev.filter((s) => s.id !== id))
-        showToast('Supplier deleted')
+        showToast('Supplier deleted', 'success', () => handleRestore(id))
       } catch (err: any) { showToast(err.message || 'Failed to delete', 'error') }
     })
   }
@@ -169,7 +173,13 @@ export default function SuppliersClient({ initialSuppliers, total, page, pageSiz
         <SearchInput placeholder="Search suppliers…" />
       </div>
 
-      {optimisticSuppliers.length === 0 && !showDeleted ? (
+      {loading ? (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
+          {Array.from({ length: 3 }).map((_, i) => <SkeletonCard key={i} />)}
+        </div>
+      ) : error && optimisticSuppliers.length === 0 ? (
+        <ErrorState message={error} onRetry={() => { setError(null); setSuppliers(initialSuppliers) }} />
+      ) : optimisticSuppliers.length === 0 && !showDeleted ? (
         <EmptyState icon={Truck} title={qParam ? 'No suppliers match your search' : 'No suppliers found'} description={qParam ? 'Try a different search term or clear the filter.' : 'Add your first supplier to get started.'} actionLabel="Add Supplier" onAction={openCreate} secondaryActionLabel={qParam ? 'Clear filter' : undefined} onSecondaryAction={qParam ? clearSearch : undefined} />
       ) : optimisticSuppliers.length === 0 && showDeleted ? (
         <EmptyState icon={Truck} title="No deleted suppliers" description="All suppliers are active. Toggle off 'Show Deleted' to return." />

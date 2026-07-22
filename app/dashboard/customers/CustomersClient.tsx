@@ -1,8 +1,10 @@
 'use client'
 
 import { useState, useEffect, useOptimistic, useTransition, useCallback } from 'react'
+import { SkeletonRow } from '@/components/ui/Skeleton'
 import { ShoppingCart, Plus, Pencil, Trash2, RotateCcw, X, Loader2, Mail, Phone } from 'lucide-react'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { ErrorState } from '@/components/ui/ErrorState'
 import { SearchInput } from '@/components/ui/SearchInput'
 import { PaginationBar } from '@/components/ui/PaginationBar'
 import { useToast } from '@/components/ui/Toast'
@@ -57,12 +59,14 @@ export default function CustomersClient({ initialCustomers, total, page, pageSiz
   const [form, setForm] = useState(emptyForm)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
 
   const isAdmin = userRole === 'ADMIN'
 
   const clearSearch = useCallback(() => router.push(pathname), [router, pathname])
 
-  useEffect(() => { setCustomers(initialCustomers) }, [initialCustomers])
+  useEffect(() => { setCustomers(initialCustomers); setLoading(false) }, [initialCustomers])
 
   function openCreate() { setEditing(null); setForm(emptyForm); setErrors({}); setShowModal(true) }
   function openEdit(c: CustomerData) { setEditing(c); setForm({ name: c.name, email: c.email || '', phone: c.phone }); setErrors({}); setShowModal(true) }
@@ -100,7 +104,7 @@ export default function CustomersClient({ initialCustomers, total, page, pageSiz
           setCustomers((prev) => prev.map((c) => (c.id === editing.id ? { ...c, ...data.customer } : c)))
           showToast('Customer updated')
           closeModal()
-        } catch (err: any) { showToast(err.message || 'Something went wrong', 'error') }
+        } catch (err: any) { showToast(err.message || 'Something went wrong', 'error'); if (customers.length === 0) setError(err.message || 'Something went wrong') }
       })
     } else {
       startTransition(async () => {
@@ -125,7 +129,7 @@ export default function CustomersClient({ initialCustomers, total, page, pageSiz
         const res = await fetch(`/api/v1/customers/${id}`, { method: 'DELETE' })
         if (!res.ok) { const data = await res.json(); throw new Error(data.error) }
         setCustomers((prev) => prev.filter((c) => c.id !== id))
-        showToast('Customer deleted')
+        showToast('Customer deleted', 'success', () => handleRestore(id))
       } catch (err: any) { showToast(err.message || 'Failed to delete', 'error') }
     })
   }
@@ -168,7 +172,19 @@ export default function CustomersClient({ initialCustomers, total, page, pageSiz
         <SearchInput placeholder="Search by name, email, or phone…" />
       </div>
 
-      {optimisticCustomers.length === 0 && !showDeleted ? (
+      {loading ? (
+        <div className="card" style={{ overflow: 'hidden' }}>
+          <div style={{ overflowX: 'auto' }}>
+            <table className="responsive-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <tbody>
+                {Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : error && optimisticCustomers.length === 0 ? (
+        <ErrorState message={error} onRetry={() => { setError(null); setCustomers(initialCustomers) }} />
+      ) : optimisticCustomers.length === 0 && !showDeleted ? (
         <EmptyState icon={ShoppingCart} title={qParam ? 'No customers match your search' : 'No customers found'} description={qParam ? 'Try a different search term or clear the filter.' : 'Add your first customer to get started.'} actionLabel="Add Customer" onAction={openCreate} secondaryActionLabel={qParam ? 'Clear filter' : undefined} onSecondaryAction={qParam ? clearSearch : undefined} />
       ) : optimisticCustomers.length === 0 && showDeleted ? (
         <EmptyState icon={ShoppingCart} title="No deleted customers" description="All customers are active. Toggle off 'Show Deleted' to return." />

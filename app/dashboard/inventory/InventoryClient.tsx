@@ -1,8 +1,10 @@
 'use client'
 
 import { useState, useEffect, useOptimistic, useTransition, useCallback } from 'react'
+import { SkeletonRow } from '@/components/ui/Skeleton'
 import { Package, X, Loader2 } from 'lucide-react'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { ErrorState } from '@/components/ui/ErrorState'
 import { SearchInput } from '@/components/ui/SearchInput'
 import { PaginationBar } from '@/components/ui/PaginationBar'
 import { CursorPagination } from '@/components/ui/CursorPagination'
@@ -56,6 +58,8 @@ export default function InventoryClient({ initialItems, total, page, pageSize, t
   const [adjusting, setAdjusting] = useState<string | null>(null)
   const [adjustForm, setAdjustForm] = useState({ delta: '', reason: '' })
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
 
   const clearSearch = useCallback(() => router.push(pathname), [router, pathname])
 
@@ -67,6 +71,7 @@ export default function InventoryClient({ initialItems, total, page, pageSize, t
       setNextCursor(initialNextCursor ?? null)
       setHasMore(initialHasMore ?? false)
     }
+    setLoading(false)
   }, [initialItems])
 
   function getStockColor(qty: number, reorderPoint: number) {
@@ -148,9 +153,10 @@ export default function InventoryClient({ initialItems, total, page, pageSize, t
       setItems((prev) => [...prev, ...data.items])
       setNextCursor(data.nextCursor)
       setHasMore(data.hasMore)
-    } catch (err: any) {
-      showToast(err.message || 'Failed to load more', 'error')
-    } finally {
+      } catch (err: any) {
+        showToast(err.message || 'Failed to load more', 'error')
+        if (items.length === 0) setError(err.message || 'Failed to load more')
+      } finally {
       setLoadingMore(false)
     }
   }
@@ -168,7 +174,19 @@ export default function InventoryClient({ initialItems, total, page, pageSize, t
         <SearchInput placeholder="Search by product name, SKU, or warehouse…" />
       </div>
 
-      {optimisticItems.length === 0 ? (
+      {loading ? (
+        <div className="card" style={{ overflow: 'hidden' }}>
+          <div style={{ overflowX: 'auto' }}>
+            <table className="responsive-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <tbody>
+                {Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : error && optimisticItems.length === 0 ? (
+        <ErrorState message={error} onRetry={() => { setError(null); setItems(initialItems) }} />
+      ) : optimisticItems.length === 0 ? (
         <EmptyState
           icon={Package}
           title={qParam ? 'No inventory matches your search' : 'No inventory found'}

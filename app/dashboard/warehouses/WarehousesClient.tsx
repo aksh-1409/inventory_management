@@ -1,8 +1,10 @@
 'use client'
 
 import { useState, useEffect, useOptimistic, useTransition, useCallback } from 'react'
+import { SkeletonCard } from '@/components/ui/Skeleton'
 import { Warehouse, Plus, Pencil, Trash2, RotateCcw, X, Loader2, MapPin } from 'lucide-react'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { ErrorState } from '@/components/ui/ErrorState'
 import { SearchInput } from '@/components/ui/SearchInput'
 import { PaginationBar } from '@/components/ui/PaginationBar'
 import { useToast } from '@/components/ui/Toast'
@@ -63,12 +65,14 @@ export default function WarehousesClient({ initialWarehouses, total, page, pageS
   const [form, setForm] = useState({ name: '', location: '' })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
 
   const isAdmin = userRole === 'ADMIN'
 
   const clearSearch = useCallback(() => router.push(pathname), [router, pathname])
 
-  useEffect(() => { setWarehouses(initialWarehouses) }, [initialWarehouses])
+  useEffect(() => { setWarehouses(initialWarehouses); setLoading(false) }, [initialWarehouses])
 
   function openCreate() {
     setEditingWH(null)
@@ -131,6 +135,7 @@ export default function WarehousesClient({ initialWarehouses, total, page, pageS
           closeModal()
         } catch (err: any) {
           showToast(err.message || 'Something went wrong', 'error')
+          if (warehouses.length === 0) setError(err.message || 'Something went wrong')
         }
       })
     } else {
@@ -168,7 +173,7 @@ export default function WarehousesClient({ initialWarehouses, total, page, pageS
           throw new Error(data.error)
         }
         setWarehouses((prev) => prev.filter((w) => w.id !== id))
-        showToast('Warehouse deleted')
+        showToast('Warehouse deleted', 'success', () => handleRestore(id))
       } catch (err: any) {
         showToast(err.message || 'Failed to delete', 'error')
       }
@@ -218,7 +223,13 @@ export default function WarehousesClient({ initialWarehouses, total, page, pageS
         <SearchInput placeholder="Search warehouses…" />
       </div>
 
-      {optimisticWarehouses.length === 0 && !showDeleted ? (
+      {loading ? (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
+          {Array.from({ length: 3 }).map((_, i) => <SkeletonCard key={i} />)}
+        </div>
+      ) : error && optimisticWarehouses.length === 0 ? (
+        <ErrorState message={error} onRetry={() => { setError(null); router.refresh() }} />
+      ) : optimisticWarehouses.length === 0 && !showDeleted ? (
         <EmptyState
           icon={Warehouse}
           title={qParam ? 'No warehouses match your search' : 'No warehouses found'}
