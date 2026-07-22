@@ -1,26 +1,29 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import { getSession, useSession } from 'next-auth/react'
 import { Package, Loader2, AlertCircle } from 'lucide-react'
 
 interface Warehouse { id: string; name: string }
 
 export default function SetupPage() {
-  const router = useRouter()
   const { update: updateSession } = useSession()
-
   const [name, setName] = useState('')
   const [warehouseId, setWarehouseId] = useState('')
   const [warehouses, setWarehouses] = useState<Warehouse[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [userRole, setUserRole] = useState<string | null>(null)
+  const [needsPassword, setNeedsPassword] = useState(false)
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
 
   useEffect(() => {
     fetch('/api/v1/warehouses').then(r => r.json()).then(d => setWarehouses(d.warehouses || [])).catch(() => {})
     getSession().then(session => {
       if (session?.user?.name) setName(session.user.name)
+      if ((session as any)?.user?.role) setUserRole((session as any).user.role)
+      setNeedsPassword(!(session as any)?.user?.passwordSetAt)
     })
   }, [])
 
@@ -29,22 +32,31 @@ export default function SetupPage() {
     setLoading(true)
     setError(null)
 
+    if (needsPassword && password !== confirmPassword) {
+      setError('Passwords do not match')
+      setLoading(false)
+      return
+    }
+
     const res = await fetch('/api/auth/setup', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, warehouseId }),
+      body: JSON.stringify({ name, warehouseId, password: needsPassword ? password : undefined }),
     })
 
     if (!res.ok) {
-      const data = await res.json()
-      setError(data.error || 'Something went wrong')
+      let message = 'Something went wrong'
+      try {
+        const data = await res.json()
+        message = data.error || message
+      } catch {}
+      setError(message)
       setLoading(false)
       return
     }
 
     await updateSession({ trigger: 'update' })
-    router.push('/dashboard')
-    router.refresh()
+    window.location.href = '/dashboard'
   }
 
   const inputStyle: React.CSSProperties = {
@@ -106,15 +118,34 @@ export default function SetupPage() {
             />
           </div>
 
+          {needsPassword && (
+            <>
+              <div>
+                <label style={labelStyle}>Create a StockPilot password</label>
+                <input type="password" value={password} onChange={e => setPassword(e.target.value)} required minLength={8} placeholder="At least 8 characters" style={inputStyle} />
+                <p style={{ fontSize: 11, color: 'rgba(161,161,170,0.5)', marginTop: 4 }}>Use this password when signing in without Google or GitHub.</p>
+              </div>
+              <div>
+                <label style={labelStyle}>Confirm password</label>
+                <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required minLength={8} placeholder="Repeat your password" style={inputStyle} />
+              </div>
+            </>
+          )}
+
           <div>
-            <label style={labelStyle}>Warehouse</label>
+            <label style={labelStyle}>
+              Warehouse
+              {userRole === 'ADMIN' && <span style={{ color: 'rgba(161,161,170,0.5)', fontWeight: 400 }}> (optional for admins)</span>}
+            </label>
             <select
               value={warehouseId}
               onChange={e => setWarehouseId(e.target.value)}
-              required
+              required={userRole !== 'ADMIN'}
               style={{ ...inputStyle, appearance: 'auto' }}
             >
-              <option value="" style={{ background: '#1a1a1a' }}>Select a warehouse</option>
+              <option value="" style={{ background: '#1a1a1a' }}>
+                {userRole === 'ADMIN' ? 'All warehouses (no restriction)' : 'Select a warehouse'}
+              </option>
               {warehouses.map(w => (
                 <option key={w.id} value={w.id} style={{ background: '#1a1a1a' }}>{w.name}</option>
               ))}

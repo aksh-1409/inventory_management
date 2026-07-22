@@ -23,23 +23,47 @@ const BASE_WINDOW_MS = 15 * 60 * 1000
 const WINDOW_MULTIPLIER = 2
 const MAX_WINDOW_MS = 4 * 60 * 60 * 1000 // 4 hours cap
 
-export function checkRateLimit(key: string): {
+export interface RateLimitResult {
   success: boolean
   retryAfterMs?: number
   remaining?: number
-} {
+}
+
+function activeEntry(key: string): RateLimitEntry | undefined {
   const now = Date.now()
   const entry = store.get(key)
 
-  if (!entry || now >= entry.resetAt) {
-    const windowMs = entry ? Math.min(entry.windowMs * WINDOW_MULTIPLIER, MAX_WINDOW_MS) : BASE_WINDOW_MS
-    store.set(key, { count: 1, resetAt: now + windowMs, windowMs })
+  if (entry && now >= entry.resetAt) {
+    store.delete(key)
+    return undefined
+  }
+
+  return entry
+}
+
+export function getRateLimitStatus(key: string): RateLimitResult {
+  const entry = activeEntry(key)
+  if (!entry) return { success: true, remaining: BASE_MAX }
+
+  if (entry.count >= BASE_MAX) {
+    return { success: false, retryAfterMs: entry.resetAt - Date.now() }
+  }
+
+  return { success: true, remaining: BASE_MAX - entry.count }
+}
+
+export function recordFailedAttempt(key: string): RateLimitResult {
+  const now = Date.now()
+  const entry = activeEntry(key)
+
+  if (!entry) {
+    store.set(key, { count: 1, resetAt: now + BASE_WINDOW_MS, windowMs: BASE_WINDOW_MS })
     return { success: true, remaining: BASE_MAX - 1 }
   }
 
   entry.count += 1
 
-  if (entry.count > BASE_MAX) {
+  if (entry.count >= BASE_MAX) {
     return {
       success: false,
       retryAfterMs: entry.resetAt - now,
@@ -47,6 +71,14 @@ export function checkRateLimit(key: string): {
   }
 
   return { success: true, remaining: BASE_MAX - entry.count }
+}
+
+// Generic endpoint limiter: each request counts as an attempt.
+export function checkRateLimit(key: string): RateLimitResult {
+  const status = getRateLimitStatus(key)
+  if (!status.success) return status
+  const recorded = recordFailedAttempt(key)
+  return { success: true, remaining: recorded.remaining ?? 0 }
 }
 
 export function checkRateLimitPair(ipKey: string, accountKey: string): {

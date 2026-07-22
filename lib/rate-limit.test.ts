@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { checkRateLimit, cleanupRateLimit, resetRateLimit } from './rate-limit'
+import { checkRateLimit, cleanupRateLimit, getRateLimitStatus, recordFailedAttempt, resetRateLimit } from './rate-limit'
 
 describe('rate limiter', () => {
   const key = 'client@example.com'
@@ -26,6 +26,13 @@ describe('rate limiter', () => {
     vi.advanceTimersByTime(900_000)
 
     expect(checkRateLimit(key)).toEqual({ success: true, remaining: 4 })
+  })
+
+  it('checks login status without counting successful attempts', () => {
+    expect(getRateLimitStatus(key)).toEqual({ success: true, remaining: 5 })
+    expect(getRateLimitStatus(key)).toEqual({ success: true, remaining: 5 })
+    expect(recordFailedAttempt(key)).toEqual({ success: true, remaining: 4 })
+    expect(getRateLimitStatus(key)).toEqual({ success: true, remaining: 4 })
   })
 
   it('keeps independent limits per key', () => {

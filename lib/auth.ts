@@ -1,11 +1,17 @@
 import NextAuth from 'next-auth'
+import { CredentialsSignin } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import GoogleProvider from 'next-auth/providers/google'
 import GitHubProvider from 'next-auth/providers/github'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
-import { checkRateLimitPair, resetRateLimit } from '@/lib/rate-limit'
+import { getRateLimitStatus, recordFailedAttempt, resetRateLimit } from '@/lib/rate-limit'
+import { normalizeEmail } from '@/lib/email'
 import { authConfig } from './auth.config'
+
+class RateLimitedSignin extends CredentialsSignin {
+  code = 'rate_limited'
+}
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
@@ -19,18 +25,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       async authorize(credentials, req) {
         if (!credentials?.email || !credentials?.password) return null
 
-        const email = credentials.email as string
+        const email = normalizeEmail(credentials.email as string)
         const password = credentials.password as string
 
-        // Composite rate limit: IP+email
-        const ip = (req as any)?.headers?.['x-forwarded-for']?.split(',')[0]?.trim()
-          ?? (req as any)?.headers?.['x-real-ip']
-          ?? 'unknown'
-        const rateCheck = checkRateLimitPair(`login:ip:${ip}`, `login:account:${email}`)
-        if (!rateCheck.success) {
-          throw new Error(
-            `Too many attempts. Try again in ${Math.ceil((rateCheck.retryAfterMs ?? 0) / 60000)} minute(s).`
-          )
+        const forwardedFor = req.headers.get('x-forwarded-for')
+        const ip = forwardedFor?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || null
+        const accountKey = `login:account:${email}`
+        const ipKey = ip ? `login:ip:${ip}` : null
+        const accountStatus = getRateLimitStatus(accountKey)
+        const ipStatus = ipKey ? getRateLimitStatus(ipKey) : { success: true }
+        if (!accountStatus.success || !ipStatus.success) {
+          throw new RateLimitedSignin()
         }
 
         // Look up user in DB
@@ -40,14 +45,21 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         })
 
         if (!user) {
-          throw new Error('Invalid email or password.')
+          recordFailedAttempt(accountKey)
+          if (ipKey) recordFailedAttempt(ipKey)
+          return null
         }
 
         // Verify password
         const isValid = await bcrypt.compare(password, user.passwordHash)
         if (!isValid) {
-          throw new Error('Invalid email or password.')
+          recordFailedAttempt(accountKey)
+          if (ipKey) recordFailedAttempt(ipKey)
+          return null
         }
+
+        resetRateLimit(accountKey)
+        if (ipKey) resetRateLimit(ipKey)
 
         return {
           id: user.id,
@@ -57,6 +69,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           warehouseId: user.warehouseId,
           warehouseName: user.warehouse?.name ?? null,
           emailVerifiedAt: user.emailVerified,
+          passwordSetAt: user.passwordSetAt,
         }
       },
     }),
@@ -81,7 +94,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       // and OAuth (profile id may be undefined or not match our DB).
       if (user && user.email) {
         const dbUser = await prisma.user.findUnique({
-          where: { email: user.email },
+          where: { email: normalizeEmail(user.email) },
           include: { warehouse: true },
         })
         if (dbUser) {
@@ -90,6 +103,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           token.warehouseId = dbUser.warehouseId
           token.warehouseName = dbUser.warehouse?.name ?? null
           token.emailVerifiedAt = dbUser.emailVerified?.toISOString() ?? null
+          token.passwordSetAt = dbUser.passwordSetAt?.toISOString() ?? null
         }
       } else if (user) {
         token.id = user.id ?? (user as any).id
@@ -97,6 +111,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.warehouseId = (user as any).warehouseId ?? null
         token.warehouseName = (user as any).warehouseName ?? null
         token.emailVerifiedAt = (user as any).emailVerifiedAt?.toString?.() ?? null
+        token.passwordSetAt = (user as any).passwordSetAt?.toString?.() ?? null
       }
       // On token refresh, re-fetch current role from DB
       if (trigger === 'update' && token.id) {
@@ -109,22 +124,25 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           token.warehouseId = freshUser.warehouseId
           token.warehouseName = freshUser.warehouse?.name ?? null
           token.emailVerifiedAt = freshUser.emailVerified?.toISOString() ?? null
+          token.passwordSetAt = freshUser.passwordSetAt?.toISOString() ?? null
         }
       }
       return token
     },
     async signIn({ user, account }) {
-      if (user.email) resetRateLimit(`login:account:${user.email}`)
+      if (user.email) resetRateLimit(`login:account:${normalizeEmail(user.email)}`)
 
       // Auto-link OAuth accounts: create user if not exists — no warehouse assigned yet
       if (account?.provider !== 'credentials' && user.email) {
-        const existing = await prisma.user.findUnique({ where: { email: user.email } })
+        const email = normalizeEmail(user.email)
+        const existing = await prisma.user.findUnique({ where: { email } })
         if (!existing) {
           await prisma.user.create({
             data: {
               name: user.name ?? '',
-              email: user.email,
+              email,
               passwordHash: '',
+              passwordSetAt: null,
               role: 'OPERATOR',
               warehouseId: null,
               emailVerified: new Date(),

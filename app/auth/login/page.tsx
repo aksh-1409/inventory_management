@@ -11,6 +11,14 @@ const DEMO_ACCOUNTS = [
   { label: 'Mike (Operator)', email: 'mike@urbansole.com', password: 'password123' },
 ]
 
+const ERROR_MESSAGES: Record<string, string> = {
+  Configuration: 'Authentication is not available right now. Please wait a moment and try again.',
+  CredentialsSignin: 'Invalid email or password.',
+  AccessDenied: 'Access denied. You do not have permission to sign in.',
+  rate_limited: 'Too many failed attempts. Please wait before trying again.',
+  Default: 'An error occurred. Please try again.',
+}
+
 function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -24,12 +32,17 @@ function LoginForm() {
   const [oauthProviders, setOauthProviders] = useState<string[]>([])
 
   useEffect(() => {
+    const errParam = searchParams?.get('error')
+    const codeParam = searchParams?.get('code')
+    if (errParam) setError(ERROR_MESSAGES[codeParam || errParam] || ERROR_MESSAGES.Default)
+    if (searchParams?.get('registered') === 'true') setError(null)
+
     getProviders().then(providers => {
       if (providers) {
         setOauthProviders(Object.keys(providers).filter(p => p !== 'credentials'))
       }
     })
-  }, [])
+  }, [searchParams])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -45,7 +58,7 @@ function LoginForm() {
     setLoading(false)
 
     if (res?.error) {
-      setError(res.error)
+      setError(ERROR_MESSAGES[res.error] || res.error)
     } else {
       router.push(callbackUrl)
       router.refresh()
@@ -83,6 +96,12 @@ function LoginForm() {
         <h1 style={{ fontSize: 24, fontWeight: 600, color: 'white', marginBottom: 4 }}>Welcome back</h1>
         <p style={{ fontSize: 14, color: 'rgba(161,161,170,1)' }}>Sign in to your inventory control tower</p>
       </div>
+
+      {(searchParams?.get('registered') === 'true' || searchParams?.get('reset') === 'true') && (
+        <div style={{ marginBottom: 16, background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)', color: '#4ade80', borderRadius: 8, padding: '10px 12px', fontSize: 13 }}>
+          {searchParams?.get('reset') === 'true' ? 'Password updated. Sign in with your new password.' : 'Account created successfully. You can now sign in.'}
+        </div>
+      )}
 
       {/* Demo Account Quick-Fill */}
       <div style={{ marginBottom: 20 }}>
@@ -173,10 +192,18 @@ function LoginForm() {
           />
         </div>
 
-        <div style={{ marginBottom: 20 }}>
-          <label htmlFor="password" style={{ display: 'block', fontSize: 14, fontWeight: 500, color: 'rgba(212,212,216,1)', marginBottom: 6 }}>
-            Password
-          </label>
+        <div style={{ marginBottom: 8 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+            <label htmlFor="password" style={{ fontSize: 14, fontWeight: 500, color: 'rgba(212,212,216,1)' }}>
+              Password
+            </label>
+            <Link
+              href="/auth/forgot-password"
+              style={{ fontSize: 12, color: 'rgba(167,139,250,1)', textDecoration: 'none' }}
+            >
+              Forgot password?
+            </Link>
+          </div>
           <div style={{ position: 'relative' }}>
             <input
               id="password"

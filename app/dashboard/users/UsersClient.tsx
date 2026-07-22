@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useMemo } from 'react'
-import { Users, Search, X, Shield, User } from 'lucide-react'
+import { useEffect, useState, useMemo } from 'react'
+import { Users, Search, X, Shield, User, Check, Loader2, XCircle, Clock3 } from 'lucide-react'
 import { EmptyState } from '@/components/ui/EmptyState'
 
 interface UserData {
@@ -13,6 +13,15 @@ interface UserData {
   createdAt: string
 }
 
+interface ResetRequestData {
+  id: string
+  operatorName: string
+  operatorEmail: string
+  warehouseName: string | null
+  requestedAt: string
+  expiresAt: string
+}
+
 interface Props {
   initialUsers: UserData[]
   currentUserId: string
@@ -21,6 +30,36 @@ interface Props {
 export default function UsersClient({ initialUsers, currentUserId }: Props) {
   const [users] = useState<UserData[]>(initialUsers)
   const [search, setSearch] = useState('')
+  const [requests, setRequests] = useState<ResetRequestData[]>([])
+  const [reviewing, setReviewing] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  async function loadRequests() {
+    const response = await fetch('/api/auth/admin-reset-requests', { cache: 'no-store' })
+    if (!response.ok) return
+    const data = await response.json()
+    setRequests(data.requests)
+  }
+
+  useEffect(() => {
+    loadRequests()
+    const timer = setInterval(loadRequests, 5000)
+    return () => clearInterval(timer)
+  }, [])
+
+  async function reviewRequest(id: string, action: 'approve' | 'reject') {
+    setReviewing(id)
+    setError(null)
+    const response = await fetch(`/api/auth/admin-reset-requests/${id}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action }),
+    })
+    const data = await response.json()
+    setReviewing(null)
+    if (!response.ok) return setError(data.error || 'Unable to review request.')
+    setRequests(current => current.filter(request => request.id !== id))
+  }
 
   const filtered = useMemo(() => {
     if (!search) return users
@@ -48,6 +87,40 @@ export default function UsersClient({ initialUsers, currentUserId }: Props) {
             <X style={{ width: 14, height: 14 }} />
           </button>
         )}
+      </div>
+
+      {error && (
+        <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(239,68,68,0.1)', color: '#ef4444', fontSize: 13, marginBottom: 16 }}>{error}</div>
+      )}
+
+      <div className="card" style={{ padding: 20, marginBottom: 24 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: requests.length ? 16 : 0 }}>
+          <div>
+            <h2 style={{ color: 'var(--text-heading)', fontSize: 16, fontWeight: 600 }}>Password reset approvals</h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: 12, marginTop: 3 }}>{requests.length} pending request{requests.length === 1 ? '' : 's'}</p>
+          </div>
+          <Clock3 style={{ width: 18, color: requests.length ? 'var(--accent)' : 'var(--text-muted)' }} />
+        </div>
+        {requests.length === 0 ? (
+          <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>No operators are waiting for a password reset.</p>
+        ) : requests.map(request => (
+          <div key={request.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, padding: '14px 0', borderTop: '1px solid var(--border)', flexWrap: 'wrap' }}>
+            <div>
+              <p style={{ color: 'var(--text-heading)', fontSize: 14, fontWeight: 500 }}>{request.operatorName}</p>
+              <p style={{ color: 'var(--text-muted)', fontSize: 12 }}>{request.operatorEmail} · {request.warehouseName || 'No warehouse'}</p>
+              <p style={{ color: 'var(--text-muted)', fontSize: 11, marginTop: 3 }}>Requested {new Date(request.requestedAt).toLocaleString()}</p>
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button disabled={reviewing === request.id} onClick={() => reviewRequest(request.id, 'reject')} className="btn" style={{ color: 'var(--danger)', border: '1px solid rgba(239,68,68,0.3)' }}>
+                <XCircle style={{ width: 14 }} /> Reject
+              </button>
+              <button disabled={reviewing === request.id} onClick={() => reviewRequest(request.id, 'approve')} className="btn btn-primary">
+                {reviewing === request.id ? <Loader2 style={{ width: 14, animation: 'spin 1s linear infinite' }} /> : <Check style={{ width: 14 }} />}
+                Approve
+              </button>
+            </div>
+          </div>
+        ))}
       </div>
 
       {filtered.length === 0 ? (

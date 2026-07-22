@@ -64,17 +64,10 @@ export default auth(async function middleware(req: NextRequest & { auth: any }) 
       return applySecurityHeaders(NextResponse.redirect(loginUrl))
     }
 
-    // Redirect OAuth users who haven't completed setup (no warehouse assigned)
-    if (session?.user && !session.user.warehouseId && !isApiRoute && pathname !== '/auth/setup' && !pathname.startsWith('/auth/')) {
+    const needsWarehouse = session?.user?.role === 'OPERATOR' && !session.user.warehouseId
+    const needsPassword = session?.user && !session.user.passwordSetAt
+    if ((needsWarehouse || needsPassword) && !isApiRoute && pathname !== '/auth/setup' && !pathname.startsWith('/auth/')) {
       return applySecurityHeaders(NextResponse.redirect(new URL('/auth/setup', req.url)))
-    }
-
-    // Block write operations for unverified email users
-    const writeMethods = ['POST', 'PATCH', 'PUT', 'DELETE']
-    if (isApiRoute && writeMethods.includes(req.method) && session?.user && !session.user.emailVerifiedAt) {
-      return applySecurityHeaders(
-        NextResponse.json({ error: 'Please verify your email before making changes.' }, { status: 403 })
-      )
     }
   }
 

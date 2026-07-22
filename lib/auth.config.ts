@@ -20,6 +20,7 @@ export const authConfig = {
         token.warehouseId = (user as any).warehouseId ?? null
         token.warehouseName = (user as any).warehouseName ?? null
         token.emailVerifiedAt = (user as any).emailVerifiedAt?.toString?.() ?? (user as any).emailVerifiedAt ?? null
+        token.passwordSetAt = (user as any).passwordSetAt?.toString?.() ?? (user as any).passwordSetAt ?? null
       }
       return token
     },
@@ -30,6 +31,7 @@ export const authConfig = {
         session.user.warehouseId = (token.warehouseId as string | null) ?? null
         session.user.warehouseName = (token.warehouseName as string | null) ?? null
         session.user.emailVerifiedAt = (token.emailVerifiedAt as string | null) ?? null
+        session.user.passwordSetAt = (token.passwordSetAt as string | null) ?? null
       }
       return session
     },
@@ -38,8 +40,9 @@ export const authConfig = {
       const isLoggedIn = !!auth?.user
       const isOnAuth = nextUrl.pathname.startsWith('/auth')
       const isSetup = nextUrl.pathname === '/auth/setup'
+      const isResetFlow = nextUrl.pathname === '/auth/password-reset'
 
-      if (isSetup) {
+      if (isSetup || isResetFlow) {
         return true
       }
 

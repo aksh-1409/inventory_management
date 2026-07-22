@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { checkRateLimit } from '@/lib/rate-limit'
-import { createVerificationToken } from '@/lib/verification'
+import { normalizeEmail } from '@/lib/email'
 
 const signupSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -35,7 +35,8 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const { name, email, password, warehouseId } = result.data
+    const { name, password, warehouseId } = result.data
+    const email = normalizeEmail(result.data.email)
 
     // Validate warehouse exists
     const warehouse = await prisma.warehouse.findUnique({ where: { id: warehouseId } })
@@ -61,9 +62,9 @@ export async function POST(req: NextRequest) {
         name,
         email,
         passwordHash,
+        passwordSetAt: new Date(),
         role: 'OPERATOR',
         warehouseId,
-        emailVerified: null,
       },
       select: {
         id: true,
@@ -74,14 +75,9 @@ export async function POST(req: NextRequest) {
       },
     })
 
-    const token = await createVerificationToken(email)
-    const verifyUrl = `${req.nextUrl.origin}/api/auth/verify?token=${token}`
-    console.log(`[VERIFICATION] ${verifyUrl}`)
-
     return NextResponse.json({
-      message: 'Account created. Please verify your email before logging in.',
+      message: 'Account created. You can now sign in.',
       user,
-      devUrl: verifyUrl,
     }, { status: 201 })
   } catch (error) {
     console.error('[SIGNUP_ERROR]', error)

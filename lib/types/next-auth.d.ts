@@ -12,6 +12,7 @@ declare module 'next-auth' {
       warehouseId: string | null
       warehouseName: string | null
       emailVerifiedAt: string | null
+      passwordSetAt: string | null
     }
   }
 
@@ -22,6 +23,7 @@ declare module 'next-auth' {
     role: 'ADMIN' | 'OPERATOR'
     warehouseId: string | null
     warehouseName: string | null
+    passwordSetAt: Date | string | null
   }
 }
 
@@ -32,5 +34,6 @@ declare module 'next-auth/jwt' {
     warehouseId: string | null
     warehouseName: string | null
     emailVerifiedAt: string | null
+    passwordSetAt: string | null
   }
 }

@@ -18,6 +18,8 @@ async function getProfile(userId: string) {
     role: user.role,
     warehouseName: user.warehouse?.name ?? null,
     createdAt: user.createdAt.toISOString(),
+    hasPassword: user.passwordHash.length > 0,
+    passwordChangedAt: user.passwordChangedAt?.toISOString() ?? null,
   }
 }
 
