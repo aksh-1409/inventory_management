@@ -3,6 +3,9 @@ import { prisma } from '@/lib/prisma'
 import { requireAuth, hasScope } from '@/lib/api-auth'
 import { productSchema } from '@/lib/schemas'
 import { parsePagination, parseCursor, parseSearch, buildCursorResponse } from '@/lib/pagination'
+import { auditLog } from '@/lib/audit'
+import { csvStream, formatCurrency } from '@/lib/export'
+import { generateListPdf } from '@/lib/export-pdf'
 
 export async function GET(req: NextRequest) {
   try {
@@ -14,6 +17,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     const q = parseSearch(searchParams)
     const cursorMode = searchParams.has('cursor')
+    const exportType = searchParams.get('export')
 
     const where = {
       deletedAt: null,
@@ -24,6 +28,46 @@ export async function GET(req: NextRequest) {
           { category: { contains: q, mode: 'insensitive' as const } },
         ],
       } : {}),
+    }
+
+    // Export mode: fetch all matching rows for CSV/PDF
+    if (exportType) {
+      const allProducts = await prisma.product.findMany({
+        where,
+        orderBy: [{ name: 'asc' }, { id: 'asc' }],
+        include: {
+          inventoryItems: { include: { warehouse: true } },
+        },
+      })
+      const rows = allProducts.map(p => ({
+        name: p.name, sku: p.sku, category: p.category ?? '',
+        price: Number(p.price), costPrice: p.costPrice ? Number(p.costPrice) : null,
+        reorderPoint: p.reorderPoint, createdAt: p.createdAt.toISOString(),
+      }))
+      if (exportType === 'csv') {
+        return csvStream([
+          { key: 'name', label: 'Name' },
+          { key: 'sku', label: 'SKU' },
+          { key: 'category', label: 'Category' },
+          { key: 'price', label: 'Price', transform: (v) => formatCurrency(v) },
+          { key: 'costPrice', label: 'Cost', transform: (v) => formatCurrency(v) },
+          { key: 'reorderPoint', label: 'Reorder' },
+          { key: 'createdAt', label: 'Created' },
+        ], rows)
+      }
+      if (exportType === 'pdf') {
+        const buf = await generateListPdf('Products Report', `Generated ${new Date().toLocaleDateString()}`, [
+          { key: 'name', label: 'Name', width: '25%' },
+          { key: 'sku', label: 'SKU', width: '15%' },
+          { key: 'category', label: 'Category', width: '15%' },
+          { key: 'price', label: 'Price', width: '15%', transform: (v: unknown) => formatCurrency(v) },
+          { key: 'costPrice', label: 'Cost', width: '15%', transform: (v: unknown) => formatCurrency(v) },
+          { key: 'reorderPoint', label: 'Reorder', width: '15%' },
+        ], rows)
+        return new NextResponse(new Uint8Array(buf), {
+          headers: { 'Content-Type': 'application/pdf', 'Content-Disposition': 'attachment; filename="products.pdf"' },
+        })
+      }
     }
 
     if (cursorMode) {
@@ -111,6 +155,7 @@ export async function POST(req: NextRequest) {
     }
 
     const product = await prisma.product.create({ data: result.data })
+    await auditLog(user.id, 'Product', product.id, 'CREATE', { after: product })
 
     return NextResponse.json({
       product: {

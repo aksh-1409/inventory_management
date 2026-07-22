@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { requireAuth, hasScope } from '@/lib/api-auth'
 import { transferRequestSchema } from '@/lib/schemas'
 import { parsePagination, parseCursor, parseSearch, buildCursorResponse } from '@/lib/pagination'
+import { auditLog } from '@/lib/audit'
 
 export async function GET(req: NextRequest) {
   try {
@@ -123,6 +124,7 @@ export async function POST(req: NextRequest) {
         toWarehouse: true,
       },
     })
+    await auditLog(user.id, 'Transfer', transfer.id, 'CREATE', { after: transfer })
 
     return NextResponse.json({ transfer }, { status: 201 })
   } catch (error) {

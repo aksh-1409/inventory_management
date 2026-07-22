@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth, hasScope } from '@/lib/api-auth'
 import { transferShipSchema } from '@/lib/schemas'
+import { auditLog } from '@/lib/audit'
 
 export async function POST(
   req: NextRequest,
@@ -52,6 +53,7 @@ export async function POST(
         toWarehouse: true,
       },
     })
+    await auditLog(user.id, 'Transfer', id, 'UPDATE', { after: 'shipped' })
 
     return NextResponse.json({ transfer })
   } catch (error) {

@@ -21,6 +21,7 @@ import {
   Boxes,
   Receipt,
   UserCircle,
+  Shield,
 } from 'lucide-react'
 
 interface NavItem {
@@ -42,6 +43,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Receiving', href: '/dashboard/receiving', icon: Truck },
   { label: 'Users', href: '/dashboard/users', icon: Users, adminOnly: true },
   { label: 'API Keys', href: '/dashboard/api-keys', icon: Key, adminOnly: true },
+  { label: 'Audit Log', href: '/dashboard/audit-log', icon: Shield, adminOnly: true },
   { label: 'Settings', href: '/dashboard/settings', icon: Settings, adminOnly: true },
 ]
 
@@ -64,6 +66,7 @@ export default function Sidebar() {
       <Link
         href={item.href}
         onClick={() => setMobileOpen(false)}
+        aria-current={isActive ? 'page' : undefined}
         style={{
           display: 'flex',
           alignItems: 'center',

@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { requireAuth, hasScope } from '@/lib/api-auth'
 import { supplierSchema } from '@/lib/schemas'
 import { parsePagination, parseSearch } from '@/lib/pagination'
+import { auditLog } from '@/lib/audit'
 
 export async function GET(req: NextRequest) {
   try {
@@ -57,6 +58,7 @@ export async function POST(req: NextRequest) {
 
     const data = { ...result.data, email: result.data.email || null }
     const supplier = await prisma.supplier.create({ data })
+    await auditLog(user.id, 'Supplier', supplier.id, 'CREATE', { after: supplier })
 
     return NextResponse.json({ supplier }, { status: 201 })
   } catch (error) {

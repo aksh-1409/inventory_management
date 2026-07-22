@@ -9,6 +9,8 @@ import { SearchInput } from '@/components/ui/SearchInput'
 import { PaginationBar } from '@/components/ui/PaginationBar'
 import { useToast } from '@/components/ui/Toast'
 import { customerSchema, customerUpdateSchema } from '@/lib/schemas'
+import { useSelection } from '@/lib/useSelection'
+import { SelectionBar } from '@/components/ui/SelectionBar'
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 
 interface CustomerData {
@@ -61,6 +63,8 @@ export default function CustomersClient({ initialCustomers, total, page, pageSiz
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+
+  const selection = useSelection({ totalCount: total ?? 0 })
 
   const isAdmin = userRole === 'ADMIN'
 
@@ -134,6 +138,19 @@ export default function CustomersClient({ initialCustomers, total, page, pageSiz
     })
   }
 
+  async function handleBulkDelete() {
+    const ids = selection.isAllPagesSelected ? [] : Array.from(selection.selectedIds)
+    const payload = selection.isAllPagesSelected ? { allMatching: true, searchParams: qParam } : { ids }
+    const res = await fetch('/api/v1/customers/bulk-delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+    if (!res.ok) throw new Error('Bulk delete failed')
+    selection.clearSelection()
+    router.refresh()
+  }
+
   async function handleRestore(id: string) {
     startTransition(async () => {
       addOptimistic({ type: 'restore', id })
@@ -191,10 +208,38 @@ export default function CustomersClient({ initialCustomers, total, page, pageSiz
       ) : (
         <>
           <div className="card" style={{ overflow: 'hidden', opacity: isPending ? 0.7 : 1 }}>
+            {(selection.selectionCount > 0 || selection.isAllPagesSelected) && (
+              <SelectionBar
+                count={selection.selectionCount}
+                totalCount={total ?? 0}
+                isAllPages={selection.isAllPagesSelected}
+                entityLabel="customers"
+                onClear={selection.clearSelection}
+                onDeleteSelected={handleBulkDelete}
+                deleteLabel="Delete selected"
+              />
+            )}
             <div style={{ overflowX: 'auto' }}>
               <table className="responsive-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                    <th style={{ width: 44, padding: '12px 8px' }}>
+                      <input
+                        type="checkbox"
+                        checked={selection.isAllPagesSelected || (customers.length > 0 && selection.selectedIds.size === customers.length)}
+                        onChange={() => {
+                          if (selection.isAllPagesSelected) {
+                            selection.clearSelection()
+                          } else if (selection.selectedIds.size === customers.length) {
+                            selection.clearSelection()
+                          } else {
+                            selection.selectPage(customers.map(c => c.id))
+                          }
+                        }}
+                        style={{ width: 16, height: 16, cursor: 'pointer', accentColor: 'var(--accent)' }}
+                        aria-label="Select all on page"
+                      />
+                    </th>
                     <th style={{ padding: '16px 24px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Name</th>
                     <th style={{ padding: '16px 24px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Phone</th>
                     <th style={{ padding: '16px 24px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Email</th>
@@ -206,6 +251,15 @@ export default function CustomersClient({ initialCustomers, total, page, pageSiz
                     const deleted = showDeleted && c.deletedAt !== null
                     return (
                     <tr key={c.id} style={{ borderBottom: '1px solid var(--border)', opacity: deleted ? 0.5 : 1 }}>
+                      <td data-label="" style={{ width: 44, padding: '8px', textAlign: 'center' }}>
+                        <input
+                          type="checkbox"
+                          checked={selection.isSelected(c.id)}
+                          onChange={() => selection.toggle(c.id)}
+                          style={{ width: 16, height: 16, cursor: 'pointer', accentColor: 'var(--accent)' }}
+                          aria-label={`Select ${c.name}`}
+                        />
+                      </td>
                       <td data-label="Name" style={{ padding: '16px 24px' }}>
                         <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-heading)', display: 'flex', alignItems: 'center', gap: 6 }}>
                           {c.name}
@@ -233,14 +287,14 @@ export default function CustomersClient({ initialCustomers, total, page, pageSiz
                             </button>
                           ) : (
                             <>
-                          <button onClick={() => openEdit(c)} className="btn btn-ghost" style={{ padding: 8, minHeight: 'auto', minWidth: 'auto' }}><Pencil style={{ width: 14, height: 14 }} /></button>
+                          <button onClick={() => openEdit(c)} className="btn btn-ghost" style={{ padding: 8, minHeight: 'auto', minWidth: 'auto' }} aria-label="Edit"><Pencil style={{ width: 14, height: 14 }} /></button>
                           {deleteConfirm === c.id ? (
                             <div style={{ display: 'flex', gap: 4 }}>
                               <button onClick={() => handleDelete(c.id)} style={{ padding: '4px 8px', fontSize: 12, background: 'rgba(248,113,113,0.1)', color: 'var(--danger)', border: 'none', borderRadius: 8, cursor: 'pointer' }}>Del</button>
                               <button onClick={() => setDeleteConfirm(null)} className="btn btn-ghost" style={{ padding: 8, minHeight: 'auto' }}>Cancel</button>
                             </div>
                           ) : (
-                            <button onClick={() => setDeleteConfirm(c.id)} className="btn btn-ghost" style={{ padding: 8, minHeight: 'auto', minWidth: 'auto' }}><Trash2 style={{ width: 14, height: 14 }} /></button>
+                            <button onClick={() => setDeleteConfirm(c.id)} className="btn btn-ghost" style={{ padding: 8, minHeight: 'auto', minWidth: 'auto' }} aria-label="Delete"><Trash2 style={{ width: 14, height: 14 }} /></button>
                           )}
                           </>
                           )}
@@ -264,7 +318,7 @@ export default function CustomersClient({ initialCustomers, total, page, pageSiz
           <div className="surface-2" style={{ position: 'relative', width: '100%', maxWidth: 420, borderRadius: 12, border: '1px solid var(--border)', padding: 24 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
               <h2 style={{ fontSize: 20, fontWeight: 600, color: 'var(--text-heading)' }}>{editing ? 'Edit Customer' : 'New Customer'}</h2>
-              <button onClick={closeModal} className="btn btn-ghost" style={{ padding: 4, minHeight: 'auto', minWidth: 'auto' }}><X style={{ width: 18, height: 18 }} /></button>
+              <button onClick={closeModal} className="btn btn-ghost" style={{ padding: 4, minHeight: 'auto', minWidth: 'auto' }} aria-label="Close"><X style={{ width: 18, height: 18 }} /></button>
             </div>
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div>

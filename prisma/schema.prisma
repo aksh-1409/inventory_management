@@ -74,6 +74,7 @@ model User {
   passwordResetTokens PasswordResetToken[]
   passwordResetRequests PasswordResetRequest[] @relation("ResetRequestUser")
   reviewedPasswordResetRequests PasswordResetRequest[] @relation("ResetRequestReviewer")
+  auditLogs                    AuditLog[]
 
   @@index([warehouseId])
   @@map("users")
@@ -312,4 +313,21 @@ model WebhookSubscription {
 
   @@index([eventType])
   @@map("webhook_subscriptions")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  entityType String   @map("entity_type")
+  entityId   String   @map("entity_id")
+  action     String
+  changes    Json?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user       User     @relation(fields: [userId], references: [id])
+
+  @@index([entityType, entityId])
+  @@index([userId])
+  @@index([createdAt(sort: Desc)])
+  @@map("audit_logs")
 }

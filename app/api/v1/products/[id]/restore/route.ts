@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth, hasScope } from '@/lib/api-auth'
+import { auditLog } from '@/lib/audit'
 
 export async function POST(
   req: NextRequest,
@@ -29,6 +30,7 @@ export async function POST(
       where: { id },
       data: { deletedAt: null },
     })
+    await auditLog(user.id, 'Product', id, 'RESTORE')
 
     return NextResponse.json({
       product: {

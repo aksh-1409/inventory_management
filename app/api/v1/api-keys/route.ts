@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { requireAuth, hasScope } from '@/lib/api-auth'
 import { createApiKeySchema } from '@/lib/schemas'
 import crypto from 'crypto'
+import { auditLog } from '@/lib/audit'
 
 function generateApiKey(): string {
   const raw = crypto.randomBytes(32).toString('hex')
@@ -70,6 +71,7 @@ export async function POST(req: NextRequest) {
         expiresAt,
       },
     })
+    await auditLog(user.id, 'ApiKey', apiKey.id, 'CREATE', { after: apiKey })
 
     return NextResponse.json({
       apiKey: {

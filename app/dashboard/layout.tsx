@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import Sidebar from '@/components/Sidebar'
+import { CommandPalette } from '@/components/CommandPalette'
 
 export default async function DashboardLayout({
   children,
@@ -16,6 +17,7 @@ export default async function DashboardLayout({
       <main className="main-content" style={{ flex: 1 }}>
         <div className="page-wrapper">{children}</div>
       </main>
+      <CommandPalette isAdmin={session.user?.role === 'ADMIN'} />
     </div>
   )
 }

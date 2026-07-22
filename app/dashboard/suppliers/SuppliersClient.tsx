@@ -9,6 +9,8 @@ import { SearchInput } from '@/components/ui/SearchInput'
 import { PaginationBar } from '@/components/ui/PaginationBar'
 import { useToast } from '@/components/ui/Toast'
 import { supplierSchema, supplierUpdateSchema } from '@/lib/schemas'
+import { useSelection } from '@/lib/useSelection'
+import { SelectionBar } from '@/components/ui/SelectionBar'
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 
 interface SupplierData {
@@ -62,6 +64,8 @@ export default function SuppliersClient({ initialSuppliers, total, page, pageSiz
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+
+  const selection = useSelection({ totalCount: total ?? 0 })
 
   const isAdmin = userRole === 'ADMIN'
 
@@ -135,6 +139,19 @@ export default function SuppliersClient({ initialSuppliers, total, page, pageSiz
     })
   }
 
+  async function handleBulkDelete() {
+    const ids = selection.isAllPagesSelected ? [] : Array.from(selection.selectedIds)
+    const payload = selection.isAllPagesSelected ? { allMatching: true, searchParams: qParam } : { ids }
+    const res = await fetch('/api/v1/suppliers/bulk-delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+    if (!res.ok) throw new Error('Bulk delete failed')
+    selection.clearSelection()
+    router.refresh()
+  }
+
   async function handleRestore(id: string) {
     startTransition(async () => {
       addOptimistic({ type: 'restore', id })
@@ -185,18 +202,56 @@ export default function SuppliersClient({ initialSuppliers, total, page, pageSiz
         <EmptyState icon={Truck} title="No deleted suppliers" description="All suppliers are active. Toggle off 'Show Deleted' to return." />
       ) : (
         <>
+          {(selection.selectionCount > 0 || selection.isAllPagesSelected) && (
+            <SelectionBar
+              count={selection.selectionCount}
+              totalCount={total ?? 0}
+              isAllPages={selection.isAllPagesSelected}
+              entityLabel="suppliers"
+              onClear={selection.clearSelection}
+              onDeleteSelected={handleBulkDelete}
+              deleteLabel="Delete selected"
+            />
+          )}
+          <div style={{ marginBottom: 12 }}>
+            <input
+              type="checkbox"
+              checked={selection.isAllPagesSelected || (suppliers.length > 0 && selection.selectedIds.size === suppliers.length)}
+              onChange={() => {
+                if (selection.isAllPagesSelected) {
+                  selection.clearSelection()
+                } else if (selection.selectedIds.size === suppliers.length) {
+                  selection.clearSelection()
+                } else {
+                  selection.selectPage(suppliers.map(s => s.id))
+                }
+              }}
+              style={{ width: 16, height: 16, cursor: 'pointer', accentColor: 'var(--accent)' }}
+              aria-label="Select all on page"
+            />
+            <span style={{ fontSize: 13, color: 'var(--text-muted)', marginLeft: 8 }}>{selection.selectionCount > 0 ? `${selection.selectionCount} selected` : 'Select all'}</span>
+          </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16, opacity: isPending ? 0.7 : 1 }}>
             {optimisticSuppliers.map((s) => {
               const deleted = showDeleted && s.deletedAt !== null
               return (
               <div key={s.id} className="card" style={{ padding: 20, opacity: deleted ? 0.5 : 1 }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
-                  <div>
-                    <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-heading)', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 6 }}>
-                      {s.name}
-                      {deleted && <span className="badge" style={{ background: 'rgba(255,255,255,0.06)', color: 'var(--text-muted)', fontSize: 10, padding: '1px 6px' }}>Deleted</span>}
-                    </h3>
-                    {s.contactName && <p style={{ fontSize: 14, color: 'var(--text-muted)' }}>{s.contactName}</p>}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <input
+                      type="checkbox"
+                      checked={selection.isSelected(s.id)}
+                      onChange={() => selection.toggle(s.id)}
+                      style={{ width: 16, height: 16, cursor: 'pointer', accentColor: 'var(--accent)' }}
+                      aria-label={`Select ${s.name}`}
+                    />
+                    <div>
+                      <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-heading)', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 6 }}>
+                        {s.name}
+                        {deleted && <span className="badge" style={{ background: 'rgba(255,255,255,0.06)', color: 'var(--text-muted)', fontSize: 10, padding: '1px 6px' }}>Deleted</span>}
+                      </h3>
+                      {s.contactName && <p style={{ fontSize: 14, color: 'var(--text-muted)' }}>{s.contactName}</p>}
+                    </div>
                   </div>
                     {isAdmin && (
                     <div style={{ display: 'flex', gap: 4 }}>
@@ -206,14 +261,14 @@ export default function SuppliersClient({ initialSuppliers, total, page, pageSiz
                         </button>
                       ) : (
                       <>
-                      <button onClick={() => openEdit(s)} className="btn btn-ghost" style={{ padding: 8, minHeight: 'auto', minWidth: 'auto' }}><Pencil style={{ width: 14, height: 14 }} /></button>
+                      <button onClick={() => openEdit(s)} className="btn btn-ghost" style={{ padding: 8, minHeight: 'auto', minWidth: 'auto' }} aria-label="Edit"><Pencil style={{ width: 14, height: 14 }} /></button>
                       {deleteConfirm === s.id ? (
                         <div style={{ display: 'flex', gap: 4 }}>
                           <button onClick={() => handleDelete(s.id)} style={{ padding: '4px 8px', fontSize: 12, background: 'rgba(248,113,113,0.1)', color: 'var(--danger)', border: 'none', borderRadius: 8, cursor: 'pointer' }}>Del</button>
                           <button onClick={() => setDeleteConfirm(null)} className="btn btn-ghost" style={{ padding: 8, minHeight: 'auto' }}>Cancel</button>
                         </div>
                       ) : (
-                        <button onClick={() => setDeleteConfirm(s.id)} className="btn btn-ghost" style={{ padding: 8, minHeight: 'auto', minWidth: 'auto' }}><Trash2 style={{ width: 14, height: 14 }} /></button>
+                        <button onClick={() => setDeleteConfirm(s.id)} className="btn btn-ghost" style={{ padding: 8, minHeight: 'auto', minWidth: 'auto' }} aria-label="Delete"><Trash2 style={{ width: 14, height: 14 }} /></button>
                       )}
                       </>
                       )}
@@ -237,7 +292,7 @@ export default function SuppliersClient({ initialSuppliers, total, page, pageSiz
           <div className="surface-2" style={{ position: 'relative', width: '100%', maxWidth: 420, borderRadius: 12, border: '1px solid var(--border)', padding: 24 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
               <h2 style={{ fontSize: 20, fontWeight: 600, color: 'var(--text-heading)' }}>{editing ? 'Edit Supplier' : 'New Supplier'}</h2>
-              <button onClick={closeModal} className="btn btn-ghost" style={{ padding: 4, minHeight: 'auto', minWidth: 'auto' }}><X style={{ width: 18, height: 18 }} /></button>
+              <button onClick={closeModal} className="btn btn-ghost" style={{ padding: 4, minHeight: 'auto', minWidth: 'auto' }} aria-label="Close"><X style={{ width: 18, height: 18 }} /></button>
             </div>
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div>

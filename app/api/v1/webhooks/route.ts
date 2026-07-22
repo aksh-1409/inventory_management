@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth, hasScope } from '@/lib/api-auth'
 import { createWebhookSchema } from '@/lib/schemas'
+import { auditLog } from '@/lib/audit'
 
 export async function GET(req: NextRequest) {
   try {
@@ -45,6 +46,7 @@ export async function POST(req: NextRequest) {
     const webhook = await prisma.webhookSubscription.create({
       data: result.data,
     })
+    await auditLog(user.id, 'Webhook', webhook.id, 'CREATE', { after: webhook })
 
     return NextResponse.json({ webhook }, { status: 201 })
   } catch (error) {

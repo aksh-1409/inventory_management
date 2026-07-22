@@ -305,7 +305,7 @@ export default function SalesClient({ initialSales, total, page, pageSize, produ
           <div className="surface-2" style={{ position: 'relative', width: '100%', maxWidth: 520, borderRadius: 12, border: '1px solid var(--border)', padding: 24, maxHeight: '90vh', overflowY: 'auto' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
               <h2 style={{ fontSize: 18, fontWeight: 600, color: 'var(--text-heading)' }}>Record Sale</h2>
-              <button onClick={() => setShowModal(false)} className="btn btn-ghost" style={{ padding: 4, minHeight: 'auto', minWidth: 'auto' }}>
+              <button onClick={() => setShowModal(false)} className="btn btn-ghost" style={{ padding: 4, minHeight: 'auto', minWidth: 'auto' }} aria-label="Close">
                 <X style={{ width: 18, height: 18 }} />
               </button>
             </div>
@@ -338,7 +338,7 @@ export default function SalesClient({ initialSales, total, page, pageSize, produ
                   {matchedCustomer && (
                     <div style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', gap: 6 }}>
                       <Check style={{ width: 14, height: 14, color: 'var(--success)' }} />
-                      <button type="button" onClick={() => { setMatchedCustomer(null); setForm({ ...form, customerId: '' }); setPhoneInput(''); setCreatingInline(false) }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 0 }}>
+                      <button type="button" onClick={() => { setMatchedCustomer(null); setForm({ ...form, customerId: '' }); setPhoneInput(''); setCreatingInline(false) }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 0 }} aria-label="Clear customer">
                         <X style={{ width: 12, height: 12 }} />
                       </button>
                     </div>

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth, hasScope } from '@/lib/api-auth'
 import { transferAcceptSchema } from '@/lib/schemas'
+import { auditLog } from '@/lib/audit'
 
 export async function POST(
   req: NextRequest,
@@ -72,6 +73,7 @@ export async function POST(
       })
       return [updatedTransfer]
     })
+    await auditLog(user.id, 'Transfer', id, 'UPDATE', { after: 'accepted' })
 
     return NextResponse.json({ transfer })
   } catch (error: any) {

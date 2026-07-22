@@ -128,12 +128,12 @@ export default function ApiKeysClient({ initialKeys }: Props) {
               <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8 }}>Copy this key now. It won&apos;t be shown again.</p>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <code style={{ fontSize: 14, fontFamily: 'monospace', color: 'var(--text-heading)', background: 'rgba(255,255,255,0.05)', padding: '8px 12px', borderRadius: 8, wordBreak: 'break-all' }}>{newKeyVisible}</code>
-                <button onClick={() => copyToClipboard(newKeyVisible)} className="btn btn-ghost" style={{ padding: 8, minHeight: 'auto', minWidth: 'auto' }}>
+                <button onClick={() => copyToClipboard(newKeyVisible)} className="btn btn-ghost" style={{ padding: 8, minHeight: 'auto', minWidth: 'auto' }} aria-label="Copy">
                   <Copy style={{ width: 14, height: 14 }} />
                 </button>
               </div>
             </div>
-            <button onClick={() => setNewKeyVisible(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
+            <button onClick={() => setNewKeyVisible(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }} aria-label="Close">
               <X style={{ width: 16, height: 16 }} />
             </button>
           </div>
@@ -144,7 +144,7 @@ export default function ApiKeysClient({ initialKeys }: Props) {
         <Search style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', width: 16, height: 16, color: 'var(--text-muted)' }} />
         <input type="text" placeholder="Search keys..." value={search} onChange={(e) => setSearch(e.target.value)} className="input" style={{ paddingLeft: 36 }} />
         {search && (
-          <button onClick={() => setSearch('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
+          <button onClick={() => setSearch('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }} aria-label="Clear search">
             <X style={{ width: 14, height: 14 }} />
           </button>
         )}
@@ -200,7 +200,7 @@ export default function ApiKeysClient({ initialKeys }: Props) {
           <div className="surface-2" style={{ position: 'relative', width: '100%', maxWidth: 480, borderRadius: 12, border: '1px solid var(--border)', padding: 24, maxHeight: '90vh', overflowY: 'auto' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
               <h2 style={{ fontSize: 20, fontWeight: 600, color: 'var(--text-heading)' }}>Create API Key</h2>
-              <button onClick={() => setShowCreateModal(false)} className="btn btn-ghost" style={{ padding: 4, minHeight: 'auto', minWidth: 'auto' }}><X style={{ width: 18, height: 18 }} /></button>
+              <button onClick={() => setShowCreateModal(false)} className="btn btn-ghost" style={{ padding: 4, minHeight: 'auto', minWidth: 'auto' }} aria-label="Close"><X style={{ width: 18, height: 18 }} /></button>
             </div>
             <form onSubmit={handleCreate} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div>

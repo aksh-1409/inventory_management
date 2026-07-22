@@ -535,7 +535,7 @@ export default function TransfersClient({ initialTransfers, total, page, pageSiz
           <div className="surface-2" style={{ position: 'relative', width: '100%', maxWidth: 480, borderRadius: 12, border: '1px solid var(--border)', padding: 24, maxHeight: '90vh', overflowY: 'auto' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
               <h2 style={{ fontSize: 18, fontWeight: 600, color: 'var(--text-heading)' }}>New Transfer Request</h2>
-              <button onClick={() => setShowRequestModal(false)} className="btn btn-ghost" style={{ padding: 4, minHeight: 'auto', minWidth: 'auto' }}>
+              <button onClick={() => setShowRequestModal(false)} className="btn btn-ghost" style={{ padding: 4, minHeight: 'auto', minWidth: 'auto' }} aria-label="Close">
                 <X style={{ width: 18, height: 18 }} />
               </button>
             </div>
@@ -591,7 +591,7 @@ export default function TransfersClient({ initialTransfers, total, page, pageSiz
           <div className="surface-2" style={{ position: 'relative', width: '100%', maxWidth: 420, borderRadius: 12, border: '1px solid var(--border)', padding: 24 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
               <h2 style={{ fontSize: 18, fontWeight: 600, color: 'var(--text-heading)' }}>Fulfill Request</h2>
-              <button onClick={() => setShowAcceptModal(null)} className="btn btn-ghost" style={{ padding: 4, minHeight: 'auto', minWidth: 'auto' }}>
+              <button onClick={() => setShowAcceptModal(null)} className="btn btn-ghost" style={{ padding: 4, minHeight: 'auto', minWidth: 'auto' }} aria-label="Close">
                 <X style={{ width: 18, height: 18 }} />
               </button>
             </div>
@@ -632,7 +632,7 @@ export default function TransfersClient({ initialTransfers, total, page, pageSiz
           <div className="surface-2" style={{ position: 'relative', width: '100%', maxWidth: 420, borderRadius: 12, border: '1px solid var(--border)', padding: 24 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
               <h2 style={{ fontSize: 18, fontWeight: 600, color: 'var(--text-heading)' }}>Ship Transfer</h2>
-              <button onClick={() => setShowShipModal(null)} className="btn btn-ghost" style={{ padding: 4, minHeight: 'auto', minWidth: 'auto' }}>
+              <button onClick={() => setShowShipModal(null)} className="btn btn-ghost" style={{ padding: 4, minHeight: 'auto', minWidth: 'auto' }} aria-label="Close">
                 <X style={{ width: 18, height: 18 }} />
               </button>
             </div>
@@ -659,7 +659,7 @@ export default function TransfersClient({ initialTransfers, total, page, pageSiz
           <div className="surface-2" style={{ position: 'relative', width: '100%', maxWidth: 420, borderRadius: 12, border: '1px solid var(--border)', padding: 24 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
               <h2 style={{ fontSize: 18, fontWeight: 600, color: 'var(--text-heading)' }}>Receive Transfer</h2>
-              <button onClick={() => setShowReceiveModal(null)} className="btn btn-ghost" style={{ padding: 4, minHeight: 'auto', minWidth: 'auto' }}>
+              <button onClick={() => setShowReceiveModal(null)} className="btn btn-ghost" style={{ padding: 4, minHeight: 'auto', minWidth: 'auto' }} aria-label="Close">
                 <X style={{ width: 18, height: 18 }} />
               </button>
             </div>

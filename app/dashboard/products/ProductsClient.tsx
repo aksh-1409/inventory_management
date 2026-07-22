@@ -10,7 +10,10 @@ import { SearchInput } from '@/components/ui/SearchInput'
 import { PaginationBar } from '@/components/ui/PaginationBar'
 import { CursorPagination } from '@/components/ui/CursorPagination'
 import { useToast } from '@/components/ui/Toast'
+import { ExportButton } from '@/components/ui/ExportButton'
 import { productSchema, productUpdateSchema } from '@/lib/schemas'
+import { useSelection } from '@/lib/useSelection'
+import { SelectionBar } from '@/components/ui/SelectionBar'
 
 interface InventoryEntry {
   id: string
@@ -94,6 +97,8 @@ export default function ProductsClient({ initialProducts, total, page, pageSize,
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+
+  const selection = useSelection({ totalCount: total ?? totalCount ?? 0 })
 
   const isAdmin = userRole === 'ADMIN'
 
@@ -247,6 +252,19 @@ export default function ProductsClient({ initialProducts, total, page, pageSize,
     })
   }
 
+  async function handleBulkDelete() {
+    const ids = selection.isAllPagesSelected ? [] : Array.from(selection.selectedIds)
+    const payload = selection.isAllPagesSelected ? { allMatching: true, searchParams: qParam } : { ids }
+    const res = await fetch('/api/v1/products/bulk-delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+    if (!res.ok) throw new Error('Bulk delete failed')
+    selection.clearSelection()
+    router.refresh()
+  }
+
   async function handleLoadMore() {
     setLoadingMore(true)
     try {
@@ -288,6 +306,10 @@ export default function ProductsClient({ initialProducts, total, page, pageSize,
           <p style={{ fontSize: 14, color: 'var(--text-muted)', marginTop: 4 }}>{total} products in catalog</p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
+          <ExportButton
+            csvUrl={`/api/v1/products?export=csv${qParam ? `&q=${encodeURIComponent(qParam)}` : ''}`}
+            pdfUrl={`/api/v1/products?export=pdf${qParam ? `&q=${encodeURIComponent(qParam)}` : ''}`}
+          />
           {isAdmin && (
             <a
               href={showDeleted ? '?' : '?showDeleted=1'}
@@ -341,10 +363,38 @@ export default function ProductsClient({ initialProducts, total, page, pageSize,
       ) : (
         <>
           <div className="card" style={{ overflow: 'hidden', opacity: isPending ? 0.7 : 1 }}>
+            {(selection.selectionCount > 0 || selection.isAllPagesSelected) && (
+              <SelectionBar
+                count={selection.selectionCount}
+                totalCount={total ?? totalCount ?? 0}
+                isAllPages={selection.isAllPagesSelected}
+                entityLabel="products"
+                onClear={selection.clearSelection}
+                onDeleteSelected={handleBulkDelete}
+                deleteLabel="Delete selected"
+              />
+            )}
             <div style={{ overflowX: 'auto' }}>
               <table className="responsive-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                    <th style={{ width: 44, padding: '12px 8px' }}>
+                      <input
+                        type="checkbox"
+                        checked={selection.isAllPagesSelected || (products.length > 0 && selection.selectedIds.size === products.length)}
+                        onChange={() => {
+                          if (selection.isAllPagesSelected) {
+                            selection.clearSelection()
+                          } else if (selection.selectedIds.size === products.length) {
+                            selection.clearSelection()
+                          } else {
+                            selection.selectPage(products.map(p => p.id))
+                          }
+                        }}
+                        style={{ width: 16, height: 16, cursor: 'pointer', accentColor: 'var(--accent)' }}
+                        aria-label="Select all on page"
+                      />
+                    </th>
                     <th style={{ padding: '16px 24px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Product</th>
                     <th style={{ padding: '16px 24px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>SKU</th>
                     <th style={{ padding: '16px 24px', textAlign: 'right', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Price</th>
@@ -361,6 +411,15 @@ export default function ProductsClient({ initialProducts, total, page, pageSize,
                     const deleted = isDeleted(product)
                     return (
                       <tr key={product.id} style={{ borderBottom: '1px solid var(--border)', opacity: deleted ? 0.5 : 1 }}>
+                        <td data-label="" style={{ width: 44, padding: '8px', textAlign: 'center' }}>
+                          <input
+                            type="checkbox"
+                            checked={selection.isSelected(product.id)}
+                            onChange={() => selection.toggle(product.id)}
+                            style={{ width: 16, height: 16, cursor: 'pointer', accentColor: 'var(--accent)' }}
+                            aria-label={`Select ${product.name}`}
+                          />
+                        </td>
                         <td data-label="Product" style={{ padding: '16px 24px' }}>
                           <div>
                             <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-heading)', display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -436,7 +495,7 @@ export default function ProductsClient({ initialProducts, total, page, pageSize,
           <div className="surface-2" style={{ position: 'relative', width: '100%', maxWidth: 480, borderRadius: 12, border: '1px solid var(--border)', padding: 24, maxHeight: '90vh', overflowY: 'auto' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
               <h2 style={{ fontSize: 20, fontWeight: 600, color: 'var(--text-heading)' }}>{editingProduct ? 'Edit Product' : 'New Product'}</h2>
-              <button onClick={closeModal} className="btn btn-ghost" style={{ padding: 4, minHeight: 'auto', minWidth: 'auto' }}>
+              <button onClick={closeModal} className="btn btn-ghost" style={{ padding: 4, minHeight: 'auto', minWidth: 'auto' }} aria-label="Close">
                 <X style={{ width: 18, height: 18 }} />
               </button>
             </div>

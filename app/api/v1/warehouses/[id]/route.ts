@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth, hasScope } from '@/lib/api-auth'
 import { warehouseUpdateSchema } from '@/lib/schemas'
+import { auditLog } from '@/lib/audit'
 
 export async function GET(
   req: NextRequest,
@@ -63,6 +64,7 @@ export async function PATCH(
       where: { id },
       data: result.data,
     })
+    await auditLog(user.id, 'Warehouse', id, 'UPDATE', { before: existing, after: warehouse })
 
     return NextResponse.json({ warehouse })
   } catch (error) {
@@ -101,6 +103,7 @@ export async function DELETE(
     }
 
     await prisma.warehouse.update({ where: { id }, data: { deletedAt: new Date() } })
+    await auditLog(user.id, 'Warehouse', id, 'DELETE')
 
     return NextResponse.json({ message: 'Warehouse deleted' })
   } catch (error) {

@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { requireAuth, hasScope } from '@/lib/api-auth'
 import { customerSchema } from '@/lib/schemas'
 import { parsePagination, parseSearch } from '@/lib/pagination'
+import { auditLog } from '@/lib/audit'
 
 export async function GET(req: NextRequest) {
   try {
@@ -64,6 +65,7 @@ export async function POST(req: NextRequest) {
 
     const data = { ...result.data, email: result.data.email || null }
     const customer = await prisma.customer.create({ data })
+    await auditLog(user.id, 'Customer', customer.id, 'CREATE', { after: customer })
 
     return NextResponse.json({ customer }, { status: 201 })
   } catch (error) {

@@ -135,7 +135,7 @@ export default function WebhooksClient({ initialWebhooks }: Props) {
         <Search style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', width: 16, height: 16, color: 'var(--text-muted)' }} />
         <input type="text" placeholder="Search webhooks..." value={search} onChange={(e) => setSearch(e.target.value)} className="input" style={{ paddingLeft: 36 }} />
         {search && (
-          <button onClick={() => setSearch('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
+          <button onClick={() => setSearch('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }} aria-label="Clear search">
             <X style={{ width: 14, height: 14 }} />
           </button>
         )}
@@ -172,7 +172,7 @@ export default function WebhooksClient({ initialWebhooks }: Props) {
                     <Zap style={{ width: 12, height: 12 }} />
                     Test
                   </button>
-                  <button onClick={() => handleDelete(w.id)} disabled={loading} className="btn btn-ghost" style={{ gap: 4, color: 'var(--danger)', fontSize: 12, padding: '8px 12px', minHeight: 'auto' }}>
+                  <button onClick={() => handleDelete(w.id)} disabled={loading} className="btn btn-ghost" style={{ gap: 4, color: 'var(--danger)', fontSize: 12, padding: '8px 12px', minHeight: 'auto' }} aria-label="Delete">
                     <Trash2 style={{ width: 13, height: 13 }} />
                   </button>
                 </div>
@@ -188,7 +188,7 @@ export default function WebhooksClient({ initialWebhooks }: Props) {
           <div className="surface-2" style={{ position: 'relative', width: '100%', maxWidth: 480, borderRadius: 12, border: '1px solid var(--border)', padding: 24 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
               <h2 style={{ fontSize: 20, fontWeight: 600, color: 'var(--text-heading)' }}>Add Webhook</h2>
-              <button onClick={() => setShowCreateModal(false)} className="btn btn-ghost" style={{ padding: 4, minHeight: 'auto', minWidth: 'auto' }}><X style={{ width: 18, height: 18 }} /></button>
+              <button onClick={() => setShowCreateModal(false)} className="btn btn-ghost" style={{ padding: 4, minHeight: 'auto', minWidth: 'auto' }} aria-label="Close"><X style={{ width: 18, height: 18 }} /></button>
             </div>
             <form onSubmit={handleCreate} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div>

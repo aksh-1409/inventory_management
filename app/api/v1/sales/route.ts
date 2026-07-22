@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { requireAuth, hasScope } from '@/lib/api-auth'
 import { dispatchWebhook } from '@/lib/webhooks'
 import { saleSchema } from '@/lib/schemas'
+import { auditLog } from '@/lib/audit'
 
 export async function POST(req: NextRequest) {
   try {
@@ -66,6 +67,7 @@ export async function POST(req: NextRequest) {
       saleId: transaction.id, productId, warehouseId, customerId, quantity, unitPrice,
       total: quantity * unitPrice, remainingStock: updatedItem.quantity,
     })
+    await auditLog(user.id, 'Sale', transaction.id, 'CREATE', { after: transaction })
 
     // Fetch related names for response
     const [product, warehouse, customer] = await Promise.all([

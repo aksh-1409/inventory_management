@@ -9,6 +9,8 @@ import { SearchInput } from '@/components/ui/SearchInput'
 import { PaginationBar } from '@/components/ui/PaginationBar'
 import { useToast } from '@/components/ui/Toast'
 import { warehouseSchema, warehouseUpdateSchema } from '@/lib/schemas'
+import { useSelection } from '@/lib/useSelection'
+import { SelectionBar } from '@/components/ui/SelectionBar'
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 
 interface WarehouseItem {
@@ -67,6 +69,8 @@ export default function WarehousesClient({ initialWarehouses, total, page, pageS
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+
+  const selection = useSelection({ totalCount: total ?? 0 })
 
   const isAdmin = userRole === 'ADMIN'
 
@@ -180,6 +184,19 @@ export default function WarehousesClient({ initialWarehouses, total, page, pageS
     })
   }
 
+  async function handleBulkDelete() {
+    const ids = selection.isAllPagesSelected ? [] : Array.from(selection.selectedIds)
+    const payload = selection.isAllPagesSelected ? { allMatching: true, searchParams: qParam } : { ids }
+    const res = await fetch('/api/v1/warehouses/bulk-delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+    if (!res.ok) throw new Error('Bulk delete failed')
+    selection.clearSelection()
+    router.refresh()
+  }
+
   async function handleRestore(id: string) {
     startTransition(async () => {
       addOptimistic({ type: 'restore', id })
@@ -243,22 +260,60 @@ export default function WarehousesClient({ initialWarehouses, total, page, pageS
         <EmptyState icon={Warehouse} title="No deleted warehouses" description="All warehouses are active. Toggle off 'Show Deleted' to return." />
       ) : (
         <>
+          {(selection.selectionCount > 0 || selection.isAllPagesSelected) && (
+            <SelectionBar
+              count={selection.selectionCount}
+              totalCount={total ?? 0}
+              isAllPages={selection.isAllPagesSelected}
+              entityLabel="warehouses"
+              onClear={selection.clearSelection}
+              onDeleteSelected={handleBulkDelete}
+              deleteLabel="Delete selected"
+            />
+          )}
+          <div style={{ marginBottom: 12 }}>
+            <input
+              type="checkbox"
+              checked={selection.isAllPagesSelected || (warehouses.length > 0 && selection.selectedIds.size === warehouses.length)}
+              onChange={() => {
+                if (selection.isAllPagesSelected) {
+                  selection.clearSelection()
+                } else if (selection.selectedIds.size === warehouses.length) {
+                  selection.clearSelection()
+                } else {
+                  selection.selectPage(warehouses.map(w => w.id))
+                }
+              }}
+              style={{ width: 16, height: 16, cursor: 'pointer', accentColor: 'var(--accent)' }}
+              aria-label="Select all on page"
+            />
+            <span style={{ fontSize: 13, color: 'var(--text-muted)', marginLeft: 8 }}>{selection.selectionCount > 0 ? `${selection.selectionCount} selected` : 'Select all'}</span>
+          </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16, opacity: isPending ? 0.7 : 1 }}>
             {optimisticWarehouses.map((wh) => {
               const deleted = showDeleted && wh.deletedAt !== null
               return (
               <div key={wh.id} className="card" style={{ padding: 20, opacity: deleted ? 0.5 : 1 }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
-                  <div>
-                    <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-heading)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
-                      {wh.name}
-                      {deleted && <span className="badge" style={{ background: 'rgba(255,255,255,0.06)', color: 'var(--text-muted)', fontSize: 10, padding: '1px 6px' }}>Deleted</span>}
-                    </h3>
-                    {wh.location && (
-                      <p style={{ fontSize: 14, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <MapPin style={{ width: 12, height: 12 }} />{wh.location}
-                      </p>
-                    )}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <input
+                      type="checkbox"
+                      checked={selection.isSelected(wh.id)}
+                      onChange={() => selection.toggle(wh.id)}
+                      style={{ width: 16, height: 16, cursor: 'pointer', accentColor: 'var(--accent)' }}
+                      aria-label={`Select ${wh.name}`}
+                    />
+                    <div>
+                      <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-heading)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+                        {wh.name}
+                        {deleted && <span className="badge" style={{ background: 'rgba(255,255,255,0.06)', color: 'var(--text-muted)', fontSize: 10, padding: '1px 6px' }}>Deleted</span>}
+                      </h3>
+                      {wh.location && (
+                        <p style={{ fontSize: 14, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <MapPin style={{ width: 12, height: 12 }} />{wh.location}
+                        </p>
+                      )}
+                    </div>
                   </div>
                   {isAdmin && (
                     <div style={{ display: 'flex', gap: 4 }}>
@@ -268,7 +323,7 @@ export default function WarehousesClient({ initialWarehouses, total, page, pageS
                         </button>
                       ) : (
                       <>
-                      <button onClick={() => openEdit(wh)} className="btn btn-ghost" style={{ padding: 8, minHeight: 'auto', minWidth: 'auto' }}>
+                      <button onClick={() => openEdit(wh)} className="btn btn-ghost" style={{ padding: 8, minHeight: 'auto', minWidth: 'auto' }} aria-label="Edit">
                         <Pencil style={{ width: 14, height: 14 }} />
                       </button>
                       {deleteConfirm === wh.id ? (
@@ -277,7 +332,7 @@ export default function WarehousesClient({ initialWarehouses, total, page, pageS
                           <button onClick={() => setDeleteConfirm(null)} className="btn btn-ghost" style={{ padding: 8, minHeight: 'auto' }}>Cancel</button>
                         </div>
                       ) : (
-                        <button onClick={() => setDeleteConfirm(wh.id)} className="btn btn-ghost" style={{ padding: 8, minHeight: 'auto', minWidth: 'auto' }}>
+                        <button onClick={() => setDeleteConfirm(wh.id)} className="btn btn-ghost" style={{ padding: 8, minHeight: 'auto', minWidth: 'auto' }} aria-label="Delete">
                           <Trash2 style={{ width: 14, height: 14 }} />
                         </button>
                       )}
@@ -327,7 +382,7 @@ export default function WarehousesClient({ initialWarehouses, total, page, pageS
           <div className="surface-2" style={{ position: 'relative', width: '100%', maxWidth: 420, borderRadius: 12, border: '1px solid var(--border)', padding: 24 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
               <h2 style={{ fontSize: 20, fontWeight: 600, color: 'var(--text-heading)' }}>{editingWH ? 'Edit Warehouse' : 'New Warehouse'}</h2>
-              <button onClick={closeModal} className="btn btn-ghost" style={{ padding: 4, minHeight: 'auto', minWidth: 'auto' }}>
+              <button onClick={closeModal} className="btn btn-ghost" style={{ padding: 4, minHeight: 'auto', minWidth: 'auto' }} aria-label="Close">
                 <X style={{ width: 18, height: 18 }} />
               </button>
             </div>

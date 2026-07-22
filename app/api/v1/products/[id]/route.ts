@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth, hasScope } from '@/lib/api-auth'
 import { productUpdateSchema } from '@/lib/schemas'
+import { auditLog } from '@/lib/audit'
 
 export async function GET(
   req: NextRequest,
@@ -83,6 +84,7 @@ export async function PATCH(
       where: { id },
       data: result.data,
     })
+    await auditLog(user.id, 'Product', id, 'UPDATE', { before: existing, after: product })
 
     return NextResponse.json({
       product: {
@@ -122,6 +124,7 @@ export async function DELETE(
       where: { id },
       data: { deletedAt: new Date() },
     })
+    await auditLog(user.id, 'Product', id, 'DELETE')
 
     return NextResponse.json({ message: 'Product deleted' })
   } catch (error) {

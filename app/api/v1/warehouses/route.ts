@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { requireAuth, hasScope } from '@/lib/api-auth'
 import { warehouseSchema } from '@/lib/schemas'
 import { parsePagination, parseSearch } from '@/lib/pagination'
+import { auditLog } from '@/lib/audit'
 
 export async function GET(req: NextRequest) {
   try {
@@ -59,6 +60,7 @@ export async function POST(req: NextRequest) {
     }
 
     const warehouse = await prisma.warehouse.create({ data: result.data })
+    await auditLog(user.id, 'Warehouse', warehouse.id, 'CREATE', { after: warehouse })
 
     return NextResponse.json({ warehouse }, { status: 201 })
   } catch (error) {

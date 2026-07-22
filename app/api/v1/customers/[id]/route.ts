@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth, hasScope } from '@/lib/api-auth'
 import { customerUpdateSchema } from '@/lib/schemas'
+import { auditLog } from '@/lib/audit'
 
 export async function GET(
   req: NextRequest,
@@ -63,6 +64,7 @@ export async function PATCH(
     }
 
     const customer = await prisma.customer.update({ where: { id }, data: result.data })
+    await auditLog(user.id, 'Customer', id, 'UPDATE', { before: existing, after: customer })
     return NextResponse.json({ customer })
   } catch (error) {
     console.error('[CUSTOMER_PATCH_ERROR]', error)
@@ -92,6 +94,7 @@ export async function DELETE(
     }
 
     await prisma.customer.update({ where: { id }, data: { deletedAt: new Date() } })
+    await auditLog(user.id, 'Customer', id, 'DELETE')
     return NextResponse.json({ message: 'Customer deleted' })
   } catch (error) {
     console.error('[CUSTOMER_DELETE_ERROR]', error)
