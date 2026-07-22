@@ -253,14 +253,17 @@ export default function ProductsClient({ initialProducts, total, page, pageSize,
   }
 
   async function handleBulkDelete() {
-    const ids = selection.isAllPagesSelected ? [] : Array.from(selection.selectedIds)
-    const payload = selection.isAllPagesSelected ? { allMatching: true, searchParams: qParam } : { ids }
+    const ids = selection.isAllPagesSelected ? Array.from(selection.selectedIds).length > 0 ? Array.from(selection.selectedIds) : [] : Array.from(selection.selectedIds)
+    const payload = selection.isAllPagesSelected && ids.length === 0 ? { allMatching: true, searchParams: qParam } : { ids }
     const res = await fetch('/api/v1/products/bulk-delete', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     })
-    if (!res.ok) throw new Error('Bulk delete failed')
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Unknown error' }))
+      throw new Error(err.error || 'Bulk delete failed')
+    }
     selection.clearSelection()
     router.refresh()
   }

@@ -12,8 +12,30 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const { ids } = await req.json()
-    if (!Array.isArray(ids) || ids.length === 0) {
+    const body = await req.json()
+    let ids: string[] = []
+
+    if (body.allMatching && body.searchParams) {
+      const query = body.searchParams
+      const matching = await prisma.supplier.findMany({
+        where: {
+          deletedAt: null,
+          ...(query ? {
+            OR: [
+              { name: { contains: query, mode: 'insensitive' as const } },
+              { contactName: { contains: query, mode: 'insensitive' as const } },
+              { email: { contains: query, mode: 'insensitive' as const } },
+            ],
+          } : {}),
+        },
+        select: { id: true },
+      })
+      ids = matching.map(s => s.id)
+    } else if (Array.isArray(body.ids)) {
+      ids = body.ids
+    }
+
+    if (ids.length === 0) {
       return NextResponse.json({ error: 'No IDs provided' }, { status: 400 })
     }
 

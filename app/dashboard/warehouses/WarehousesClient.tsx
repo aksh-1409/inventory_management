@@ -260,7 +260,7 @@ export default function WarehousesClient({ initialWarehouses, total, page, pageS
         <EmptyState icon={Warehouse} title="No deleted warehouses" description="All warehouses are active. Toggle off 'Show Deleted' to return." />
       ) : (
         <>
-          {(selection.selectionCount > 0 || selection.isAllPagesSelected) && (
+          {isAdmin && (selection.selectionCount > 0 || selection.isAllPagesSelected) && (
             <SelectionBar
               count={selection.selectionCount}
               totalCount={total ?? 0}
@@ -271,24 +271,26 @@ export default function WarehousesClient({ initialWarehouses, total, page, pageS
               deleteLabel="Delete selected"
             />
           )}
-          <div style={{ marginBottom: 12 }}>
-            <input
-              type="checkbox"
-              checked={selection.isAllPagesSelected || (warehouses.length > 0 && selection.selectedIds.size === warehouses.length)}
-              onChange={() => {
-                if (selection.isAllPagesSelected) {
-                  selection.clearSelection()
-                } else if (selection.selectedIds.size === warehouses.length) {
-                  selection.clearSelection()
-                } else {
-                  selection.selectPage(warehouses.map(w => w.id))
-                }
-              }}
-              style={{ width: 16, height: 16, cursor: 'pointer', accentColor: 'var(--accent)' }}
-              aria-label="Select all on page"
-            />
-            <span style={{ fontSize: 13, color: 'var(--text-muted)', marginLeft: 8 }}>{selection.selectionCount > 0 ? `${selection.selectionCount} selected` : 'Select all'}</span>
-          </div>
+          {isAdmin && (
+            <div style={{ marginBottom: 12 }}>
+              <input
+                type="checkbox"
+                checked={selection.isAllPagesSelected || (warehouses.length > 0 && selection.selectedIds.size === warehouses.length)}
+                onChange={() => {
+                  if (selection.isAllPagesSelected) {
+                    selection.clearSelection()
+                  } else if (selection.selectedIds.size === warehouses.length) {
+                    selection.clearSelection()
+                  } else {
+                    selection.selectPage(warehouses.map(w => w.id))
+                  }
+                }}
+                style={{ width: 16, height: 16, cursor: 'pointer', accentColor: 'var(--accent)' }}
+                aria-label="Select all on page"
+              />
+              <span style={{ fontSize: 13, color: 'var(--text-muted)', marginLeft: 8 }}>{selection.selectionCount > 0 ? `${selection.selectionCount} selected` : 'Select all'}</span>
+            </div>
+          )}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16, opacity: isPending ? 0.7 : 1 }}>
             {optimisticWarehouses.map((wh) => {
               const deleted = showDeleted && wh.deletedAt !== null
@@ -296,13 +298,15 @@ export default function WarehousesClient({ initialWarehouses, total, page, pageS
               <div key={wh.id} className="card" style={{ padding: 20, opacity: deleted ? 0.5 : 1 }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <input
-                      type="checkbox"
-                      checked={selection.isSelected(wh.id)}
-                      onChange={() => selection.toggle(wh.id)}
-                      style={{ width: 16, height: 16, cursor: 'pointer', accentColor: 'var(--accent)' }}
-                      aria-label={`Select ${wh.name}`}
-                    />
+                    {isAdmin && (
+                      <input
+                        type="checkbox"
+                        checked={selection.isSelected(wh.id)}
+                        onChange={() => selection.toggle(wh.id)}
+                        style={{ width: 16, height: 16, cursor: 'pointer', accentColor: 'var(--accent)' }}
+                        aria-label={`Select ${wh.name}`}
+                      />
+                    )}
                     <div>
                       <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-heading)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
                         {wh.name}
