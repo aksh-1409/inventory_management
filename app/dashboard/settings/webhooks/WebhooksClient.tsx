@@ -117,7 +117,7 @@ export default function WebhooksClient({ initialWebhooks }: Props) {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h1 style={{ fontSize: 24, fontWeight: 600, color: 'var(--text-heading)' }}>Webhooks</h1>
-          <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>Receive HTTP callbacks on inventory events</p>
+          <p style={{ fontSize: 14, color: 'var(--text-muted)', marginTop: 4 }}>Receive HTTP callbacks on inventory events</p>
         </div>
         <button onClick={() => setShowCreateModal(true)} className="btn btn-primary" style={{ gap: 8 }}>
           <Plus style={{ width: 16, height: 16 }} />
@@ -148,23 +148,23 @@ export default function WebhooksClient({ initialWebhooks }: Props) {
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                    <span className="badge" style={{ background: 'rgba(99,102,241,0.12)', color: 'var(--accent)', fontSize: 11 }}>{w.eventType}</span>
-                    <span className="badge" style={{ background: w.isActive ? 'rgba(52,211,153,0.12)' : 'rgba(239,68,68,0.12)', color: w.isActive ? 'var(--success)' : 'var(--danger)', fontSize: 11 }}>
+                    <span className="badge" style={{ background: 'rgba(99,102,241,0.12)', color: 'var(--accent)', fontSize: 12 }}>{w.eventType}</span>
+                    <span className="badge" style={{ background: w.isActive ? 'rgba(52,211,153,0.12)' : 'rgba(239,68,68,0.12)', color: w.isActive ? 'var(--success)' : 'var(--danger)', fontSize: 12 }}>
                       {w.isActive ? 'Active' : 'Inactive'}
                     </span>
                   </div>
-                  <p className="tabular" style={{ fontSize: 13, color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{w.targetUrl}</p>
-                  <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
+                  <p className="tabular" style={{ fontSize: 14, color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{w.targetUrl}</p>
+                  <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
                     Created {new Date(w.createdAt).toLocaleDateString()}
                     {w.lastTriggeredAt && ` · Last triggered ${new Date(w.lastTriggeredAt).toLocaleDateString()}`}
                   </p>
                 </div>
-                <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                  <button onClick={() => handleTest(w.id)} disabled={loading} className="btn btn-ghost" style={{ gap: 4, fontSize: 12, padding: '6px 10px', minHeight: 'auto' }}>
-                    <Zap style={{ width: 13, height: 13 }} />
+                <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                  <button onClick={() => handleTest(w.id)} disabled={loading} className="btn btn-ghost" style={{ gap: 4, fontSize: 12, padding: '8px 12px', minHeight: 'auto' }}>
+                    <Zap style={{ width: 12, height: 12 }} />
                     Test
                   </button>
-                  <button onClick={() => handleDelete(w.id)} disabled={loading} className="btn btn-ghost" style={{ gap: 4, color: 'var(--danger)', fontSize: 12, padding: '6px 10px', minHeight: 'auto' }}>
+                  <button onClick={() => handleDelete(w.id)} disabled={loading} className="btn btn-ghost" style={{ gap: 4, color: 'var(--danger)', fontSize: 12, padding: '8px 12px', minHeight: 'auto' }}>
                     <Trash2 style={{ width: 13, height: 13 }} />
                   </button>
                 </div>
@@ -179,12 +179,12 @@ export default function WebhooksClient({ initialWebhooks }: Props) {
           <div onClick={() => setShowCreateModal(false)} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.7)' }} />
           <div className="surface-2" style={{ position: 'relative', width: '100%', maxWidth: 480, borderRadius: 12, border: '1px solid var(--border)', padding: 24 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-              <h2 style={{ fontSize: 18, fontWeight: 600, color: 'var(--text-heading)' }}>Add Webhook</h2>
+              <h2 style={{ fontSize: 20, fontWeight: 600, color: 'var(--text-heading)' }}>Add Webhook</h2>
               <button onClick={() => setShowCreateModal(false)} className="btn btn-ghost" style={{ padding: 4, minHeight: 'auto', minWidth: 'auto' }}><X style={{ width: 18, height: 18 }} /></button>
             </div>
             <form onSubmit={handleCreate} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 6 }}>Event Type *</label>
+                <label style={{ display: 'block', fontSize: 14, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 8 }}>Event Type *</label>
                 <select
                   value={createForm.eventType}
                   onChange={(e) => setCreateForm({ ...createForm, eventType: e.target.value })}
@@ -198,11 +198,11 @@ export default function WebhooksClient({ initialWebhooks }: Props) {
                 </select>
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 6 }}>Target URL *</label>
+                <label style={{ display: 'block', fontSize: 14, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 8 }}>Target URL *</label>
                 <input className="input" type="url" value={createForm.targetUrl} onChange={(e) => setCreateForm({ ...createForm, targetUrl: e.target.value })} placeholder="https://your-server.com/webhook" required />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 6 }}>Secret (optional)</label>
+                <label style={{ display: 'block', fontSize: 14, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 8 }}>Secret (optional)</label>
                 <input className="input" value={createForm.secret} onChange={(e) => setCreateForm({ ...createForm, secret: e.target.value })} placeholder="Used to sign webhook payloads" />
               </div>
               <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>

@@ -8,16 +8,14 @@
 :root {
   /* ── Spacing (4px base, 8px rhythm) ── */
   --sp-0: 0px;
-  --sp-1: 4px;
-  --sp-2: 8px;
-  --sp-3: 12px;
-  --sp-4: 16px;
-  --sp-5: 20px;
-  --sp-6: 24px;
-  --sp-8: 32px;
-  --sp-10: 40px;
-  --sp-12: 48px;
-  --sp-16: 64px;
+  --sp-4: 4px;
+  --sp-8: 8px;
+  --sp-12: 12px;
+  --sp-16: 16px;
+  --sp-24: 24px;
+  --sp-32: 32px;
+  --sp-48: 48px;
+  --sp-64: 64px;
 
   /* ── Neutrals (Resend Strict) ── */
   --bg-base: #000000;          /* Background */
@@ -48,10 +46,22 @@
   --radius-input: 6px;
   --radius-default: 8px;
   --radius-card: 12px;
+  --radius-pill: 9999px;
+
+  /* ── Type scale ── */
+  --fs-12: 12px;
+  --fs-14: 14px;
+  --fs-16: 16px;
+  --fs-20: 20px;
+  --fs-24: 24px;
+  --fs-32: 32px;
+  --fs-48: 48px;
+  --lh-body: 1.5;
+  --lh-heading: 1.2;
 
   /* ── Transitions ── */
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
-  --dur-instant: 100ms;
+  --dur-instant: 150ms;
   --dur-micro: 150ms;
   --dur-transition: 200ms;
   --dur-max: 300ms;
@@ -89,15 +99,15 @@
 }
 
 .page-wrapper {
-  padding: 24px;
-  max-width: 1400px;
+  padding: var(--sp-24);
+  max-width: 1280px;
   margin: 0 auto;
   width: 100%;
 }
 
 @media (min-width: 1024px) {
   .page-wrapper {
-    padding: 32px 40px;
+    padding: var(--sp-32) var(--sp-48);
   }
 }
 
@@ -105,19 +115,19 @@
 .hamburger-btn {
   display: flex;
   position: fixed;
-  top: 12px;
-  left: 12px;
+  top: var(--sp-12);
+  left: var(--sp-12);
   z-index: 50;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   align-items: center;
   justify-content: center;
   background: var(--bg-surface-1);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-default);
   color: var(--text-secondary);
   cursor: pointer;
-  transition: color 150ms ease, border-color 150ms ease;
+  transition: color var(--dur-micro) var(--ease), border-color var(--dur-micro) var(--ease);
 }
 .hamburger-btn:hover {
   color: white;
@@ -211,20 +221,18 @@ body {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--border);
   border-radius: var(--radius-input);
-  padding: var(--sp-2) var(--sp-3);
+  padding: var(--sp-8) var(--sp-12);
   color: var(--text-heading);
-  font-size: 14px;
+  font-size: var(--fs-14);
   font-family: inherit;
-  line-height: 1.5;
+  line-height: var(--lh-body);
   transition: border-color var(--dur-instant) var(--ease);
-  outline: none;
 }
 .input::placeholder {
   color: var(--text-muted);
 }
-.input:focus {
+.input:focus-visible {
   border-color: var(--accent);
-  box-shadow: 0 0 0 2px rgba(59, 158, 255, 0.15);
 }
 
 select.input {
@@ -248,18 +256,17 @@ select.input option {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: var(--sp-2);
-  font-size: 14px;
+  gap: var(--sp-8);
+  font-size: var(--fs-14);
   font-weight: 500;
   font-family: inherit;
   border: none;
   cursor: pointer;
   border-radius: var(--radius-default);
-  padding: var(--sp-2) var(--sp-4);
+  padding: var(--sp-8) var(--sp-16);
   min-height: 44px;
   min-width: 44px;
   transition: all var(--dur-micro) var(--ease);
-  outline: none;
 }
 .btn:disabled {
   opacity: 0.5;
@@ -300,10 +307,10 @@ select.input option {
 .badge {
   display: inline-flex;
   align-items: center;
-  gap: var(--sp-1);
-  padding: var(--sp-1) var(--sp-2);
+  gap: var(--sp-4);
+  padding: var(--sp-4) var(--sp-8);
   border-radius: var(--radius-default);
-  font-size: 12px;
+  font-size: var(--fs-12);
   font-weight: 600;
   line-height: 1;
 }
@@ -334,6 +341,13 @@ select.input option {
 /* ═══════════════════════════════════════════
    SKELETON ANIMATION
    ═══════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
 
 @keyframes shimmer {
   0% { background-position: -200% 0; }
@@ -380,13 +394,13 @@ select.input option {
 
 @media (min-width: 768px) {
   .responsive-table th {
-    padding: 20px 32px !important;
-    font-size: 12px !important;
+    padding: var(--sp-24) var(--sp-32) !important;
+    font-size: var(--fs-12) !important;
     font-weight: 600 !important;
     letter-spacing: 0.05em !important;
   }
   .responsive-table td {
-    padding: 24px 32px !important;
+    padding: var(--sp-24) var(--sp-32) !important;
   }
 }
 
@@ -397,14 +411,14 @@ select.input option {
     background: var(--bg-surface-1);
     border: 1px solid var(--border);
     border-radius: var(--radius-card);
-    padding: 16px;
-    margin-bottom: 12px;
+    padding: var(--sp-16);
+    margin-bottom: var(--sp-12);
   }
   .responsive-table tbody td {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: var(--sp-1) 0;
+    padding: var(--sp-4) 0;
     border: none;
   }
   .responsive-table tbody td::before {

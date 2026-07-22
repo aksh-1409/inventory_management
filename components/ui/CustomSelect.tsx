@@ -49,11 +49,8 @@ export function CustomSelect({ options, value, onChange, placeholder = 'Select..
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          outline: 'none',
           transition: 'border-color 150ms ease',
         }}
-        onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.22)' }}
-        onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)' }}
       >
         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {selected ? selected.label : placeholder}
@@ -77,7 +74,7 @@ export function CustomSelect({ options, value, onChange, placeholder = 'Select..
           boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
         }}>
           {options.length === 0 && (
-            <div style={{ padding: '10px 12px', fontSize: 13, color: 'var(--text-muted)' }}>No options</div>
+            <div style={{ padding: '8px 12px', fontSize: 14, color: 'var(--text-muted)' }}>No options</div>
           )}
           {options.map((opt) => (
             <button
@@ -86,8 +83,8 @@ export function CustomSelect({ options, value, onChange, placeholder = 'Select..
               onClick={() => { onChange(opt.value); setOpen(false) }}
               style={{
                 width: '100%',
-                padding: '9px 12px',
-                fontSize: 13,
+                padding: '8px 12px',
+                fontSize: 14,
                 color: opt.value === value ? 'white' : 'var(--text-heading)',
                 background: opt.value === value ? 'rgba(139,92,246,0.2)' : 'transparent',
                 border: 'none',
@@ -96,8 +93,6 @@ export function CustomSelect({ options, value, onChange, placeholder = 'Select..
                 fontFamily: 'inherit',
                 transition: 'background 100ms ease',
               }}
-              onMouseEnter={e => { if (opt.value !== value) e.currentTarget.style.background = 'rgba(255,255,255,0.06)' }}
-              onMouseLeave={e => { if (opt.value !== value) e.currentTarget.style.background = 'transparent' }}
             >
               {opt.label}
             </button>

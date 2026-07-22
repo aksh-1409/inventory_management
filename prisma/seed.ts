@@ -48,6 +48,7 @@ async function main() {
       name: 'Sarah (Admin)',
       email: 'sarah@urbansole.com',
       passwordHash: adminPassword,
+      passwordSetAt: new Date(),
       role: 'ADMIN',
     },
   })
@@ -59,6 +60,7 @@ async function main() {
       name: 'Mike (Operator)',
       email: 'mike@urbansole.com',
       passwordHash: operatorPassword,
+      passwordSetAt: new Date(),
       role: 'OPERATOR',
       warehouseId: laWarehouse.id,
     },
@@ -71,6 +73,7 @@ async function main() {
       name: 'Demo User',
       email: 'demo@demo.com',
       passwordHash: await bcrypt.hash('password123', 12),
+      passwordSetAt: new Date(),
       role: 'ADMIN',
     },
   })

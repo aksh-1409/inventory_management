@@ -71,7 +71,7 @@ export default function CustomersClient({ initialCustomers, userRole }: Props) {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h1 style={{ fontSize: 24, fontWeight: 600, color: 'var(--text-heading)' }}>Customers</h1>
-          <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>{customers.length} customers</p>
+          <p style={{ fontSize: 14, color: 'var(--text-muted)', marginTop: 4 }}>{customers.length} customers</p>
         </div>
         <button onClick={openCreate} className="btn btn-primary" style={{ gap: 8 }}><Plus style={{ width: 16, height: 16 }} />Add Customer</button>
       </div>
@@ -97,27 +97,27 @@ export default function CustomersClient({ initialCustomers, userRole }: Props) {
                       <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-heading)' }}>{c.name}</span>
                     </td>
                     <td data-label="Phone" style={{ padding: '16px 24px' }}>
-                      <span className="tabular" style={{ fontSize: 13, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span className="tabular" style={{ fontSize: 14, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 8 }}>
                         <Phone style={{ width: 12, height: 12, color: 'var(--text-muted)' }} />{c.phone}
                       </span>
                     </td>
                     <td data-label="Email" style={{ padding: '16px 24px' }}>
                       {c.email ? (
-                        <span style={{ fontSize: 13, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{ fontSize: 14, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 8 }}>
                           <Mail style={{ width: 12, height: 12, color: 'var(--text-muted)' }} />{c.email}
                         </span>
-                      ) : <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>—</span>}
+                      ) : <span style={{ color: 'var(--text-muted)', fontSize: 14 }}>—</span>}
                     </td>
                     <td style={{ padding: '16px 24px', textAlign: 'right' }}>
                       <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
-                        <button onClick={() => openEdit(c)} className="btn btn-ghost" style={{ padding: 6, minHeight: 'auto', minWidth: 'auto' }}><Pencil style={{ width: 14, height: 14 }} /></button>
+                        <button onClick={() => openEdit(c)} className="btn btn-ghost" style={{ padding: 8, minHeight: 'auto', minWidth: 'auto' }}><Pencil style={{ width: 14, height: 14 }} /></button>
                         {deleteConfirm === c.id ? (
                           <div style={{ display: 'flex', gap: 4 }}>
-                            <button onClick={() => handleDelete(c.id)} style={{ padding: '4px 8px', fontSize: 12, background: 'rgba(248,113,113,0.1)', color: 'var(--danger)', border: 'none', borderRadius: 6, cursor: 'pointer' }}>Del</button>
-                            <button onClick={() => setDeleteConfirm(null)} className="btn btn-ghost" style={{ padding: 4, minHeight: 'auto' }}>Cancel</button>
+                            <button onClick={() => handleDelete(c.id)} style={{ padding: '4px 8px', fontSize: 12, background: 'rgba(248,113,113,0.1)', color: 'var(--danger)', border: 'none', borderRadius: 8, cursor: 'pointer' }}>Del</button>
+                            <button onClick={() => setDeleteConfirm(null)} className="btn btn-ghost" style={{ padding: 8, minHeight: 'auto' }}>Cancel</button>
                           </div>
                         ) : (
-                          <button onClick={() => setDeleteConfirm(c.id)} className="btn btn-ghost" style={{ padding: 6, minHeight: 'auto', minWidth: 'auto' }}><Trash2 style={{ width: 14, height: 14 }} /></button>
+                          <button onClick={() => setDeleteConfirm(c.id)} className="btn btn-ghost" style={{ padding: 8, minHeight: 'auto', minWidth: 'auto' }}><Trash2 style={{ width: 14, height: 14 }} /></button>
                         )}
                       </div>
                     </td>
@@ -134,20 +134,20 @@ export default function CustomersClient({ initialCustomers, userRole }: Props) {
           <div onClick={closeModal} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.7)' }} />
           <div className="surface-2" style={{ position: 'relative', width: '100%', maxWidth: 420, borderRadius: 12, border: '1px solid var(--border)', padding: 24 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-              <h2 style={{ fontSize: 18, fontWeight: 600, color: 'var(--text-heading)' }}>{editing ? 'Edit Customer' : 'New Customer'}</h2>
+              <h2 style={{ fontSize: 20, fontWeight: 600, color: 'var(--text-heading)' }}>{editing ? 'Edit Customer' : 'New Customer'}</h2>
               <button onClick={closeModal} className="btn btn-ghost" style={{ padding: 4, minHeight: 'auto', minWidth: 'auto' }}><X style={{ width: 18, height: 18 }} /></button>
             </div>
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 6 }}>Name *</label>
+                <label style={{ display: 'block', fontSize: 14, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 8 }}>Name *</label>
                 <input className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="John Doe" required />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 6 }}>Phone *</label>
+                <label style={{ display: 'block', fontSize: 14, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 8 }}>Phone *</label>
                 <input className="input" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="+1-555-000-0001" required />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 6 }}>Email</label>
+                <label style={{ display: 'block', fontSize: 14, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 8 }}>Email</label>
                 <input className="input" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="john@example.com" />
               </div>
               <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>

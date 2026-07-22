@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, Suspense } from 'react'
-import { signIn } from 'next-auth/react'
+import { useState, useEffect, Suspense } from 'react'
+import { signIn, getProviders } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Eye, EyeOff, Package, Loader2, AlertCircle } from 'lucide-react'
@@ -10,6 +10,14 @@ const DEMO_ACCOUNTS = [
   { label: 'Sarah (Admin)', email: 'sarah@urbansole.com', password: 'password123' },
   { label: 'Mike (Operator)', email: 'mike@urbansole.com', password: 'password123' },
 ]
+
+const ERROR_MESSAGES: Record<string, string> = {
+  Configuration: 'Authentication is not available right now. Please wait a moment and try again.',
+  CredentialsSignin: 'Invalid email or password.',
+  AccessDenied: 'Access denied. You do not have permission to sign in.',
+  rate_limited: 'Too many failed attempts. Please wait before trying again.',
+  Default: 'An error occurred. Please try again.',
+}
 
 function LoginForm() {
   const router = useRouter()
@@ -21,6 +29,20 @@ function LoginForm() {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [oauthProviders, setOauthProviders] = useState<string[]>([])
+
+  useEffect(() => {
+    const errParam = searchParams?.get('error')
+    const codeParam = searchParams?.get('code')
+    if (errParam) setError(ERROR_MESSAGES[codeParam || errParam] || ERROR_MESSAGES.Default)
+    if (searchParams?.get('registered') === 'true') setError(null)
+
+    getProviders().then(providers => {
+      if (providers) {
+        setOauthProviders(Object.keys(providers).filter(p => p !== 'credentials'))
+      }
+    })
+  }, [searchParams])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -36,7 +58,7 @@ function LoginForm() {
     setLoading(false)
 
     if (res?.error) {
-      setError(res.error)
+      setError(ERROR_MESSAGES[res.error] || res.error)
     } else {
       router.push(callbackUrl)
       router.refresh()
@@ -52,13 +74,12 @@ function LoginForm() {
   const inputStyle: React.CSSProperties = {
     width: '100%',
     background: 'rgba(255,255,255,0.05)',
-    border: '1px solid rgba(255,255,255,0.1)',
+    border: '1px solid var(--border)',
     borderRadius: 8,
-    padding: '10px 16px',
+    padding: '8px 16px',
     color: 'white',
     fontSize: 14,
-    outline: 'none',
-    transition: 'border-color 200ms ease, box-shadow 200ms ease',
+    transition: 'border-color var(--dur-transition) var(--ease), box-shadow var(--dur-transition) var(--ease)',
   }
 
   return (
@@ -66,8 +87,8 @@ function LoginForm() {
       background: 'rgba(255,255,255,0.05)',
       backdropFilter: 'blur(24px)',
       WebkitBackdropFilter: 'blur(24px)',
-      border: '1px solid rgba(255,255,255,0.1)',
-      borderRadius: 16,
+      border: '1px solid var(--border)',
+      borderRadius: 12,
       padding: 32,
       boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)',
     }}>
@@ -75,6 +96,12 @@ function LoginForm() {
         <h1 style={{ fontSize: 24, fontWeight: 600, color: 'white', marginBottom: 4 }}>Welcome back</h1>
         <p style={{ fontSize: 14, color: 'rgba(161,161,170,1)' }}>Sign in to your inventory control tower</p>
       </div>
+
+      {(searchParams?.get('registered') === 'true' || searchParams?.get('reset') === 'true') && (
+        <div style={{ marginBottom: 16, background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)', color: '#4ade80', borderRadius: 8, padding: '10px 12px', fontSize: 13 }}>
+          {searchParams?.get('reset') === 'true' ? 'Password updated. Sign in with your new password.' : 'Account created successfully. You can now sign in.'}
+        </div>
+      )}
 
       {/* Demo Account Quick-Fill */}
       <div style={{ marginBottom: 20 }}>
@@ -165,10 +192,18 @@ function LoginForm() {
           />
         </div>
 
-        <div style={{ marginBottom: 20 }}>
-          <label htmlFor="password" style={{ display: 'block', fontSize: 14, fontWeight: 500, color: 'rgba(212,212,216,1)', marginBottom: 6 }}>
-            Password
-          </label>
+        <div style={{ marginBottom: 8 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+            <label htmlFor="password" style={{ fontSize: 14, fontWeight: 500, color: 'rgba(212,212,216,1)' }}>
+              Password
+            </label>
+            <Link
+              href="/auth/forgot-password"
+              style={{ fontSize: 12, color: 'rgba(167,139,250,1)', textDecoration: 'none' }}
+            >
+              Forgot password?
+            </Link>
+          </div>
           <div style={{ position: 'relative' }}>
             <input
               id="password"
@@ -217,7 +252,7 @@ function LoginForm() {
             border: 'none',
             color: 'white',
             fontWeight: 500,
-            padding: '10px 16px',
+            padding: '8px 16px',
             borderRadius: 8,
             fontSize: 14,
             cursor: loading ? 'not-allowed' : 'pointer',
@@ -248,7 +283,44 @@ function LoginForm() {
         </button>
       </form>
 
-      <p style={{ marginTop: 24, textAlign: 'center', fontSize: 14, color: 'rgba(161,161,170,0.6)' }}>
+      {oauthProviders.length > 0 && (
+        <>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 20, marginBottom: 4 }}>
+            <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.1)' }} />
+            <span style={{ fontSize: 12, color: 'rgba(161,161,170,0.6)', whiteSpace: 'nowrap' }}>or continue with</span>
+            <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.1)' }} />
+          </div>
+          <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+            {oauthProviders.map(provider => (
+              <button
+                key={provider}
+                type="button"
+                onClick={async () => {
+                  setError(null)
+                  setLoading(true)
+                  const res = await signIn(provider, { redirect: false })
+                  setLoading(false)
+                  if (res?.error) setError(res.error)
+                  else if (res?.url) window.location.href = res.url
+                }}
+                style={{
+                  flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  padding: '8px 12px', borderRadius: 8, fontSize: 13, fontWeight: 500, cursor: 'pointer',
+                  background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+                  color: 'rgba(212,212,216,1)', transition: 'all 200ms ease',
+                  textTransform: 'capitalize',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'white' }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = 'rgba(212,212,216,1)' }}
+              >
+                {provider}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+
+      <p style={{ marginTop: 20, textAlign: 'center', fontSize: 14, color: 'rgba(161,161,170,0.6)' }}>
         Don&apos;t have an account?{' '}
         <Link
           href="/auth/signup"

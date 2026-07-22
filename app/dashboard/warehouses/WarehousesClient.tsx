@@ -116,7 +116,7 @@ export default function WarehousesClient({ initialWarehouses, userRole }: Props)
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h1 style={{ fontSize: 24, fontWeight: 600, color: 'var(--text-heading)' }}>Warehouses</h1>
-          <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>{warehouses.length} locations</p>
+          <p style={{ fontSize: 14, color: 'var(--text-muted)', marginTop: 4 }}>{warehouses.length} locations</p>
         </div>
         {isAdmin && (
           <button onClick={openCreate} className="btn btn-primary" style={{ gap: 8 }}>
@@ -142,23 +142,23 @@ export default function WarehousesClient({ initialWarehouses, userRole }: Props)
                 <div>
                   <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-heading)', marginBottom: 4 }}>{wh.name}</h3>
                   {wh.location && (
-                    <p style={{ fontSize: 13, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <p style={{ fontSize: 14, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
                       <MapPin style={{ width: 12, height: 12 }} />{wh.location}
                     </p>
                   )}
                 </div>
                 {isAdmin && (
                   <div style={{ display: 'flex', gap: 4 }}>
-                    <button onClick={() => openEdit(wh)} className="btn btn-ghost" style={{ padding: 6, minHeight: 'auto', minWidth: 'auto' }}>
+                    <button onClick={() => openEdit(wh)} className="btn btn-ghost" style={{ padding: 8, minHeight: 'auto', minWidth: 'auto' }}>
                       <Pencil style={{ width: 14, height: 14 }} />
                     </button>
                     {deleteConfirm === wh.id ? (
                       <div style={{ display: 'flex', gap: 4 }}>
-                        <button onClick={() => handleDelete(wh.id)} style={{ padding: '4px 8px', fontSize: 12, background: 'rgba(248,113,113,0.1)', color: 'var(--danger)', border: 'none', borderRadius: 6, cursor: 'pointer' }}>Delete</button>
-                        <button onClick={() => setDeleteConfirm(null)} className="btn btn-ghost" style={{ padding: 4, minHeight: 'auto' }}>Cancel</button>
+                        <button onClick={() => handleDelete(wh.id)} style={{ padding: '4px 8px', fontSize: 12, background: 'rgba(248,113,113,0.1)', color: 'var(--danger)', border: 'none', borderRadius: 8, cursor: 'pointer' }}>Delete</button>
+                        <button onClick={() => setDeleteConfirm(null)} className="btn btn-ghost" style={{ padding: 8, minHeight: 'auto' }}>Cancel</button>
                       </div>
                     ) : (
-                      <button onClick={() => setDeleteConfirm(wh.id)} className="btn btn-ghost" style={{ padding: 6, minHeight: 'auto', minWidth: 'auto' }}>
+                      <button onClick={() => setDeleteConfirm(wh.id)} className="btn btn-ghost" style={{ padding: 8, minHeight: 'auto', minWidth: 'auto' }}>
                         <Trash2 style={{ width: 14, height: 14 }} />
                       </button>
                     )}
@@ -168,21 +168,21 @@ export default function WarehousesClient({ initialWarehouses, userRole }: Props)
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div className="surface-0" style={{ padding: '12px 16px', borderRadius: 8 }}>
-                  <p style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Products</p>
+                  <p style={{ fontSize: 12, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Products</p>
                   <p className="tabular" style={{ fontSize: 24, fontWeight: 600, color: 'var(--text-heading)' }}>{wh.totalProducts}</p>
                 </div>
                 <div className="surface-0" style={{ padding: '12px 16px', borderRadius: 8 }}>
-                  <p style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Total Stock</p>
+                  <p style={{ fontSize: 12, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Total Stock</p>
                   <p className="tabular" style={{ fontSize: 24, fontWeight: 600, color: 'var(--text-heading)' }}>{wh.totalStock}</p>
                 </div>
               </div>
 
               {wh.inventoryItems.length > 0 && (
                 <div style={{ marginTop: 16, borderTop: '1px solid var(--border)', paddingTop: 12 }}>
-                  <p style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Stock Breakdown</p>
+                  <p style={{ fontSize: 12, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Stock Breakdown</p>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                     {wh.inventoryItems.slice(0, 5).map((item) => (
-                      <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+                      <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14 }}>
                         <span style={{ color: 'var(--text-secondary)' }}>{item.product.name}</span>
                         <span className="tabular" style={{ color: 'var(--text-heading)', fontWeight: 500 }}>{item.quantity}</span>
                       </div>
@@ -204,7 +204,7 @@ export default function WarehousesClient({ initialWarehouses, userRole }: Props)
           <div onClick={closeModal} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.7)' }} />
           <div className="surface-2" style={{ position: 'relative', width: '100%', maxWidth: 420, borderRadius: 12, border: '1px solid var(--border)', padding: 24 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-              <h2 style={{ fontSize: 18, fontWeight: 600, color: 'var(--text-heading)' }}>{editingWH ? 'Edit Warehouse' : 'New Warehouse'}</h2>
+              <h2 style={{ fontSize: 20, fontWeight: 600, color: 'var(--text-heading)' }}>{editingWH ? 'Edit Warehouse' : 'New Warehouse'}</h2>
               <button onClick={closeModal} className="btn btn-ghost" style={{ padding: 4, minHeight: 'auto', minWidth: 'auto' }}>
                 <X style={{ width: 18, height: 18 }} />
               </button>
@@ -212,11 +212,11 @@ export default function WarehousesClient({ initialWarehouses, userRole }: Props)
 
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 6 }}>Name *</label>
+                <label style={{ display: 'block', fontSize: 14, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 8 }}>Name *</label>
                 <input className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="NYC Flagship" required />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 6 }}>Location</label>
+                <label style={{ display: 'block', fontSize: 14, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 8 }}>Location</label>
                 <input className="input" value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} placeholder="New York City, NY" />
               </div>
               <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>

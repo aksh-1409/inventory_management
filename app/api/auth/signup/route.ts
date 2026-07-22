@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { checkRateLimit } from '@/lib/rate-limit'
+import { normalizeEmail } from '@/lib/email'
 
 const signupSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -34,7 +35,8 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const { name, email, password, warehouseId } = result.data
+    const { name, password, warehouseId } = result.data
+    const email = normalizeEmail(result.data.email)
 
     // Validate warehouse exists
     const warehouse = await prisma.warehouse.findUnique({ where: { id: warehouseId } })
@@ -54,12 +56,13 @@ export async function POST(req: NextRequest) {
     // Hash password
     const passwordHash = await bcrypt.hash(password, 12)
 
-    // Create user (default role: OPERATOR)
+    // Create user unverified (default role: OPERATOR)
     const user = await prisma.user.create({
       data: {
         name,
         email,
         passwordHash,
+        passwordSetAt: new Date(),
         role: 'OPERATOR',
         warehouseId,
       },
@@ -72,7 +75,10 @@ export async function POST(req: NextRequest) {
       },
     })
 
-    return NextResponse.json({ user }, { status: 201 })
+    return NextResponse.json({
+      message: 'Account created. You can now sign in.',
+      user,
+    }, { status: 201 })
   } catch (error) {
     console.error('[SIGNUP_ERROR]', error)
     return NextResponse.json(

@@ -63,6 +63,12 @@ export default auth(async function middleware(req: NextRequest & { auth: any }) 
       loginUrl.searchParams.set('callbackUrl', pathname)
       return applySecurityHeaders(NextResponse.redirect(loginUrl))
     }
+
+    const needsWarehouse = session?.user?.role === 'OPERATOR' && !session.user.warehouseId
+    const needsPassword = session?.user && !session.user.passwordSetAt
+    if ((needsWarehouse || needsPassword) && !isApiRoute && pathname !== '/auth/setup' && !pathname.startsWith('/auth/')) {
+      return applySecurityHeaders(NextResponse.redirect(new URL('/auth/setup', req.url)))
+    }
   }
 
   // Apply security headers to all responses
@@ -72,6 +78,6 @@ export default auth(async function middleware(req: NextRequest & { auth: any }) 
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|public/).*)',
+    '/((?!_next/static|_next/image|favicon.ico|public/|api/auth).*)',
   ],
 }

@@ -49,6 +49,7 @@ export default function Sidebar() {
   const { data: session } = useSession()
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
 
   const isAdmin = session?.user?.role === 'ADMIN'
   const filteredItems = NAV_ITEMS.filter((item) => !item.adminOnly || isAdmin)
@@ -66,11 +67,11 @@ export default function Sidebar() {
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 10,
-          padding: '9px 12px',
+          gap: 8,
+          padding: '8px 12px',
           minHeight: 40,
           borderRadius: 8,
-          fontSize: 13,
+          fontSize: 14,
           fontWeight: 500,
           textDecoration: 'none',
           transition: 'background 150ms ease, color 150ms ease',
@@ -109,28 +110,28 @@ export default function Sidebar() {
       <div style={{
         display: 'flex',
         alignItems: 'center',
-        gap: 10,
-        padding: '0 20px',
+        gap: 8,
+        padding: '0 24px',
         height: 64,
         flexShrink: 0,
         borderBottom: '1px solid var(--border)',
       }}>
         <div style={{
-          width: 28, height: 28,
+          width: 32, height: 32,
           border: '1px solid var(--border)',
-          borderRadius: 7,
+          borderRadius: 8,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           flexShrink: 0,
         }}>
           <Package style={{ width: 14, height: 14, color: 'white' }} />
         </div>
-        <span style={{ fontSize: 15, fontWeight: 600, color: 'white', letterSpacing: '-0.01em' }}>
+        <span style={{ fontSize: 16, fontWeight: 600, color: 'white', letterSpacing: '-0.01em' }}>
           StockPilot
         </span>
       </div>
 
       {/* Nav */}
-      <nav style={{ flex: 1, padding: '16px 8px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <nav style={{ flex: 1, padding: '16px 8px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4 }}>
         {filteredItems.map((item) => (
           <NavLink key={item.href} item={item} />
         ))}
@@ -142,7 +143,7 @@ export default function Sidebar() {
         borderTop: '1px solid var(--border)',
         display: 'flex',
         alignItems: 'center',
-        gap: 10,
+        gap: 8,
       }}>
         <Link
           href="/dashboard/profile"
@@ -162,17 +163,17 @@ export default function Sidebar() {
           href="/dashboard/profile"
           style={{ flex: 1, minWidth: 0, textDecoration: 'none' }}
         >
-          <p style={{ fontSize: 13, color: '#FCFDFF', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <p style={{ fontSize: 14, color: '#FCFDFF', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {session?.user?.name}
           </p>
-          <p style={{ fontSize: 11, color: 'rgba(252,253,255,0.50)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          <p style={{ fontSize: 12, color: 'rgba(252,253,255,0.50)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             {session?.user?.warehouseName
               ? `${session.user.warehouseName} · ${session.user.role}`
               : session?.user?.role}
           </p>
         </Link>
         <button
-          onClick={() => signOut({ callbackUrl: '/auth/login' })}
+          onClick={() => setShowLogoutConfirm(true)}
           title="Sign out"
           style={{
             width: 32, height: 32,
@@ -186,7 +187,7 @@ export default function Sidebar() {
           onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--danger)' }}
           onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = 'rgba(252,253,255,0.50)' }}
         >
-          <LogOut style={{ width: 15, height: 15 }} />
+          <LogOut style={{ width: 16, height: 16 }} />
         </button>
       </div>
     </div>
@@ -200,7 +201,7 @@ export default function Sidebar() {
         onClick={() => setMobileOpen(true)}
         aria-label="Open menu"
       >
-        <Menu style={{ width: 18, height: 18 }} />
+        <Menu style={{ width: 16, height: 16 }} />
       </button>
 
       {/* Mobile: overlay + slide-in sidebar */}
@@ -243,7 +244,7 @@ export default function Sidebar() {
             onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = 'white' }}
             onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = 'rgba(252,253,255,0.60)' }}
           >
-            <X style={{ width: 15, height: 15 }} />
+            <X style={{ width: 16, height: 16 }} />
           </button>
           <SidebarContent />
         </div>
@@ -253,6 +254,53 @@ export default function Sidebar() {
       <aside className="sidebar-desktop">
         <SidebarContent />
       </aside>
+
+      {/* Logout confirmation modal */}
+      {showLogoutConfirm && (
+        <>
+          <div
+            onClick={() => setShowLogoutConfirm(false)}
+            style={{
+              position: 'fixed', inset: 0, zIndex: 100,
+              background: 'rgba(0,0,0,0.5)',
+            }}
+          />
+          <div style={{
+            position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+            zIndex: 101, background: '#1a1a1a', borderRadius: 12, padding: 24,
+            border: '1px solid rgba(255,255,255,0.1)', minWidth: 280, maxWidth: 360,
+          }}>
+            <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: 'white', marginBottom: 8 }}>
+              Sign out
+            </p>
+            <p style={{ margin: 0, fontSize: 13, color: 'rgba(161,161,170,0.8)', marginBottom: 20 }}>
+              Are you sure you want to sign out?
+            </p>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => setShowLogoutConfirm(false)}
+                style={{
+                  padding: '6px 14px', borderRadius: 8, fontSize: 13, fontWeight: 500,
+                  background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
+                  color: 'rgba(212,212,216,1)', cursor: 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => signOut({ callbackUrl: '/auth/login' })}
+                style={{
+                  padding: '6px 14px', borderRadius: 8, fontSize: 13, fontWeight: 500,
+                  background: 'var(--danger)', border: 'none',
+                  color: 'white', cursor: 'pointer',
+                }}
+              >
+                Sign out
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </>
   )
 }
