@@ -1,13 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth, hasScope } from '@/lib/api-auth'
-import { z } from 'zod'
-
-const customerUpdateSchema = z.object({
-  name: z.string().min(1).optional(),
-  email: z.string().email().optional().nullable(),
-  phone: z.string().min(1).optional(),
-})
+import { customerUpdateSchema } from '@/lib/schemas'
 
 export async function GET(
   req: NextRequest,
@@ -22,7 +16,7 @@ export async function GET(
 
     const { id } = await ctx.params
     const customer = await prisma.customer.findUnique({ where: { id } })
-    if (!customer) {
+    if (!customer || customer.deletedAt) {
       return NextResponse.json({ error: 'Customer not found' }, { status: 404 })
     }
 
@@ -97,7 +91,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Customer not found' }, { status: 404 })
     }
 
-    await prisma.customer.delete({ where: { id } })
+    await prisma.customer.update({ where: { id }, data: { deletedAt: new Date() } })
     return NextResponse.json({ message: 'Customer deleted' })
   } catch (error) {
     console.error('[CUSTOMER_DELETE_ERROR]', error)

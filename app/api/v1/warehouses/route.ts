@@ -1,29 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth, hasScope } from '@/lib/api-auth'
-import { z } from 'zod'
-
-const warehouseSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  location: z.string().optional(),
-})
+import { warehouseSchema } from '@/lib/schemas'
+import { parsePagination, parseSearch } from '@/lib/pagination'
 
 export async function GET(req: NextRequest) {
   try {
+    const authResult = await requireAuth(req)
+    if (!authResult) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { searchParams } = new URL(req.url)
-    const take = Math.min(Number(searchParams.get('take')) || 100, 500)
-    const skip = Number(searchParams.get('skip')) || 0
+    const q = parseSearch(searchParams)
+    const { page, pageSize, skip, take } = parsePagination(searchParams)
 
-    const warehouses = await prisma.warehouse.findMany({
-      take,
-      skip,
-      orderBy: { name: 'asc' },
-      include: {
-        _count: { select: { inventoryItems: true } },
-      },
-    })
+    const where = {
+      deletedAt: null,
+      ...(q ? {
+        OR: [
+          { name: { contains: q, mode: 'insensitive' as const } },
+          { location: { contains: q, mode: 'insensitive' as const } },
+        ],
+      } : {}),
+    }
 
-    return NextResponse.json({ warehouses })
+    const [warehouses, total] = await Promise.all([
+      prisma.warehouse.findMany({
+        skip, take, where,
+        orderBy: [{ name: 'asc' }, { id: 'asc' }],
+        include: { _count: { select: { inventoryItems: true } } },
+      }),
+      prisma.warehouse.count({ where }),
+    ])
+
+    return NextResponse.json({ warehouses, total, page, pageSize })
   } catch (error) {
     console.error('[WAREHOUSES_GET_ERROR]', error)
     return NextResponse.json({ error: 'Internal server error.' }, { status: 500 })

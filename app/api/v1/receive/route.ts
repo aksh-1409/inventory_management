@@ -1,16 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth, hasScope } from '@/lib/api-auth'
-import { z } from 'zod'
-
-const receiveSchema = z.object({
-  productId: z.string().min(1),
-  warehouseId: z.string().min(1),
-  supplierId: z.string().min(1),
-  quantity: z.number().int().positive(),
-  unitCost: z.number().positive().optional(),
-  notes: z.string().optional(),
-})
+import { receiveSchema } from '@/lib/schemas'
 
 export async function POST(req: NextRequest) {
   try {

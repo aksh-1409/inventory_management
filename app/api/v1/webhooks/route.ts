@@ -1,13 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth, hasScope } from '@/lib/api-auth'
-import { z } from 'zod'
-
-const createSchema = z.object({
-  eventType: z.enum(['stock.low', 'sale.created', 'transfer.completed']),
-  targetUrl: z.string().url(),
-  secret: z.string().optional(),
-})
+import { createWebhookSchema } from '@/lib/schemas'
 
 export async function GET(req: NextRequest) {
   try {
@@ -43,7 +37,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json()
-    const result = createSchema.safeParse(body)
+    const result = createWebhookSchema.safeParse(body)
     if (!result.success) {
       return NextResponse.json({ error: result.error.issues[0].message }, { status: 400 })
     }

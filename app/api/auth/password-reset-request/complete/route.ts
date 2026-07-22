@@ -1,18 +1,16 @@
 import bcrypt from 'bcryptjs'
 import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { normalizeEmail } from '@/lib/email'
 import { hashResetSecret, parseResetCookie, RESET_REQUEST_COOKIE } from '@/lib/password-reset'
 import { resetRateLimit } from '@/lib/rate-limit'
-
-const schema = z.object({ password: z.string().min(8, 'Password must be at least 8 characters') })
+import { passwordResetSchema } from '@/lib/schemas'
 
 export async function POST(req: NextRequest) {
   const credential = parseResetCookie(req.cookies.get(RESET_REQUEST_COOKIE)?.value)
   if (!credential) return NextResponse.json({ error: 'This reset request is no longer available.' }, { status: 400 })
 
-  const result = schema.safeParse(await req.json())
+  const result = passwordResetSchema.safeParse(await req.json())
   if (!result.success) return NextResponse.json({ error: result.error.issues[0].message }, { status: 400 })
 
   const passwordHash = await bcrypt.hash(result.data.password, 12)

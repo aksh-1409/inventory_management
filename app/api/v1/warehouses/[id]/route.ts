@@ -1,12 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth, hasScope } from '@/lib/api-auth'
-import { z } from 'zod'
-
-const warehouseUpdateSchema = z.object({
-  name: z.string().min(1).optional(),
-  location: z.string().optional().nullable(),
-})
+import { warehouseUpdateSchema } from '@/lib/schemas'
 
 export async function GET(
   req: NextRequest,
@@ -27,7 +22,7 @@ export async function GET(
       },
     })
 
-    if (!warehouse) {
+    if (!warehouse || warehouse.deletedAt) {
       return NextResponse.json({ error: 'Warehouse not found' }, { status: 404 })
     }
 
@@ -105,7 +100,7 @@ export async function DELETE(
       )
     }
 
-    await prisma.warehouse.delete({ where: { id } })
+    await prisma.warehouse.update({ where: { id }, data: { deletedAt: new Date() } })
 
     return NextResponse.json({ message: 'Warehouse deleted' })
   } catch (error) {

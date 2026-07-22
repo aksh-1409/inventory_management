@@ -1,17 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth, hasScope } from '@/lib/api-auth'
-import { z } from 'zod'
-
-const productUpdateSchema = z.object({
-  sku: z.string().min(1).optional(),
-  name: z.string().min(1).optional(),
-  description: z.string().optional().nullable(),
-  price: z.number().positive().optional(),
-  costPrice: z.number().positive().optional().nullable(),
-  reorderPoint: z.number().int().min(0).optional(),
-  category: z.string().optional().nullable(),
-})
+import { productUpdateSchema } from '@/lib/schemas'
 
 export async function GET(
   req: NextRequest,

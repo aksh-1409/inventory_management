@@ -1,11 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth, hasScope } from '@/lib/api-auth'
-import { z } from 'zod'
-
-const acceptSchema = z.object({
-  fromWarehouseId: z.string().min(1),
-})
+import { transferAcceptSchema } from '@/lib/schemas'
 
 export async function POST(
   req: NextRequest,
@@ -24,7 +20,7 @@ export async function POST(
 
     const { id } = await ctx.params
     const body = await req.json()
-    const result = acceptSchema.safeParse(body)
+    const result = transferAcceptSchema.safeParse(body)
     if (!result.success) {
       return NextResponse.json({ error: result.error.issues[0].message }, { status: 400 })
     }

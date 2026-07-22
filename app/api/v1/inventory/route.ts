@@ -1,13 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth, hasScope } from '@/lib/api-auth'
-import { z } from 'zod'
-
-const adjustmentSchema = z.object({
-  inventoryItemId: z.string().min(1),
-  delta: z.number().int(),
-  reason: z.string().min(1, 'Reason is required'),
-})
+import { adjustmentSchema } from '@/lib/schemas'
+import { parsePagination, parseCursor, parseSearch, buildCursorResponse } from '@/lib/pagination'
 
 export async function GET(req: NextRequest) {
   try {
@@ -15,26 +10,61 @@ export async function GET(req: NextRequest) {
     if (!authResult) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-    const { user } = authResult
 
     const { searchParams } = new URL(req.url)
-    const take = Math.min(Number(searchParams.get('take')) || 100, 500)
-    const skip = Number(searchParams.get('skip')) || 0
+    const q = parseSearch(searchParams)
+    const cursorMode = searchParams.has('cursor')
     const warehouseId = searchParams.get('warehouseId') || undefined
 
-    const items = await prisma.inventoryItem.findMany({
-      take,
-      skip,
-      where: {
-        ...(warehouseId ? { warehouseId } : {}),
-        product: { deletedAt: null },
-      },
-      include: {
-        product: true,
-        warehouse: true,
-      },
-      orderBy: { product: { name: 'asc' } },
-    })
+    const where = {
+      ...(warehouseId ? { warehouseId } : {}),
+      product: { deletedAt: null },
+      ...(q ? {
+        OR: [
+          { product: { name: { contains: q, mode: 'insensitive' as const } } },
+          { product: { sku: { contains: q, mode: 'insensitive' as const } } },
+          { warehouse: { name: { contains: q, mode: 'insensitive' as const } } },
+        ],
+      } : {}),
+    }
+
+    if (cursorMode) {
+      const { cursor, take } = parseCursor(searchParams)
+      const totalCount = await prisma.inventoryItem.count({ where })
+      const raw = await prisma.inventoryItem.findMany({
+        take: take + 1,
+        ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+        where,
+        include: { product: true, warehouse: true },
+        orderBy: [{ product: { name: 'asc' } }, { id: 'asc' }],
+      })
+      const serialized = raw.map((item) => ({
+        id: item.id,
+        quantity: item.quantity,
+        productId: item.productId,
+        warehouseId: item.warehouseId,
+        product: {
+          id: item.product.id,
+          sku: item.product.sku,
+          name: item.product.name,
+          reorderPoint: item.product.reorderPoint,
+        },
+        warehouse: { id: item.warehouse.id, name: item.warehouse.name },
+      }))
+      const { data, nextCursor, hasMore } = buildCursorResponse(serialized, take, totalCount)
+      return NextResponse.json({ items: data, nextCursor, totalCount, hasMore })
+    }
+
+    const { page, pageSize, skip, take } = parsePagination(searchParams)
+
+    const [items, total] = await Promise.all([
+      prisma.inventoryItem.findMany({
+        skip, take, where,
+        include: { product: true, warehouse: true },
+        orderBy: [{ product: { name: 'asc' } }, { id: 'asc' }],
+      }),
+      prisma.inventoryItem.count({ where }),
+    ])
 
     const serialized = items.map((item) => ({
       id: item.id,
@@ -53,7 +83,7 @@ export async function GET(req: NextRequest) {
       },
     }))
 
-    return NextResponse.json({ items: serialized })
+    return NextResponse.json({ items: serialized, total, page, pageSize })
   } catch (error) {
     console.error('[INVENTORY_GET_ERROR]', error)
     return NextResponse.json({ error: 'Internal server error.' }, { status: 500 })

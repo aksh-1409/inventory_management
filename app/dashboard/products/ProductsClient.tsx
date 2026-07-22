@@ -1,9 +1,14 @@
 'use client'
 
-import { useState, useMemo } from 'react'
-import { Package, Plus, Pencil, Trash2, Search, X, Loader2 } from 'lucide-react'
+import { useState, useEffect, useOptimistic, useTransition, useCallback } from 'react'
+import { useSearchParams, useRouter, usePathname } from 'next/navigation'
+import { Package, Plus, Pencil, Trash2, RotateCcw, X, Loader2 } from 'lucide-react'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { SearchInput } from '@/components/ui/SearchInput'
+import { PaginationBar } from '@/components/ui/PaginationBar'
+import { CursorPagination } from '@/components/ui/CursorPagination'
 import { useToast } from '@/components/ui/Toast'
+import { productSchema, productUpdateSchema } from '@/lib/schemas'
 
 interface InventoryEntry {
   id: string
@@ -20,6 +25,7 @@ interface Product {
   costPrice: number | null
   reorderPoint: number
   category: string | null
+  deletedAt: string | null
   createdAt: string
   inventoryItems: InventoryEntry[]
 }
@@ -31,8 +37,15 @@ interface Warehouse {
 
 interface Props {
   initialProducts: Product[]
+  total?: number
+  page?: number
+  pageSize?: number
+  totalCount?: number
+  nextCursor?: string | null
+  hasMore?: boolean
   warehouses: Warehouse[]
   userRole: string
+  showDeleted: boolean
 }
 
 const emptyForm = {
@@ -45,32 +58,53 @@ const emptyForm = {
   category: '',
 }
 
-export default function ProductsClient({ initialProducts, warehouses, userRole }: Props) {
+type OptimisticAction =
+  | { type: 'create'; item: Product }
+  | { type: 'update'; id: string; updates: Partial<Product> }
+  | { type: 'delete'; id: string }
+  | { type: 'restore'; item: Product }
+
+export default function ProductsClient({ initialProducts, total, page, pageSize, totalCount, nextCursor: initialNextCursor, hasMore: initialHasMore, warehouses, userRole, showDeleted }: Props) {
   const { showToast } = useToast()
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const qParam = searchParams.get('q') || ''
+  const cursorMode = initialNextCursor !== undefined
+  const [isPending, startTransition] = useTransition()
   const [products, setProducts] = useState<Product[]>(initialProducts)
-  const [search, setSearch] = useState('')
+  const [nextCursor, setNextCursor] = useState<string | null>(initialNextCursor ?? null)
+  const [hasMore, setHasMore] = useState(initialHasMore ?? false)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [optimisticProducts, addOptimistic] = useOptimistic(products, (state, action: OptimisticAction) => {
+    switch (action.type) {
+      case 'create': return [...state, action.item]
+      case 'update': return state.map((p) => (p.id === action.id ? { ...p, ...action.updates } : p))
+      case 'delete': return state.filter((p) => p.id !== action.id)
+      case 'restore': return state.map((p) => (p.id === action.item.id ? { ...p, deletedAt: null } : p))
+      default: return state
+    }
+  })
   const [showModal, setShowModal] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [form, setForm] = useState(emptyForm)
-  const [loading, setLoading] = useState(false)
+  const [errors, setErrors] = useState<Record<string, string>>({})
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
 
   const isAdmin = userRole === 'ADMIN'
 
-  const filtered = useMemo(() => {
-    if (!search) return products
-    const q = search.toLowerCase()
-    return products.filter(
-      (p) =>
-        p.name.toLowerCase().includes(q) ||
-        p.sku.toLowerCase().includes(q) ||
-        (p.category && p.category.toLowerCase().includes(q))
-    )
-  }, [products, search])
+  useEffect(() => {
+    setProducts(initialProducts)
+    if (cursorMode) {
+      setNextCursor(initialNextCursor ?? null)
+      setHasMore(initialHasMore ?? false)
+    }
+  }, [initialProducts, cursorMode ? initialNextCursor : undefined, cursorMode ? initialHasMore : undefined])
 
   function openCreate() {
     setEditingProduct(null)
     setForm(emptyForm)
+    setErrors({})
     setShowModal(true)
   }
 
@@ -85,6 +119,7 @@ export default function ProductsClient({ initialProducts, warehouses, userRole }
       reorderPoint: product.reorderPoint.toString(),
       category: product.category || '',
     })
+    setErrors({})
     setShowModal(true)
   }
 
@@ -92,12 +127,10 @@ export default function ProductsClient({ initialProducts, warehouses, userRole }
     setShowModal(false)
     setEditingProduct(null)
     setForm(emptyForm)
+    setErrors({})
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setLoading(true)
-
+  function validateForm() {
     const payload = {
       sku: form.sku,
       name: form.name,
@@ -107,51 +140,122 @@ export default function ProductsClient({ initialProducts, warehouses, userRole }
       reorderPoint: parseInt(form.reorderPoint) || 5,
       category: form.category || null,
     }
+    const schema = editingProduct ? productUpdateSchema : productSchema
+    const result = schema.safeParse(payload)
+    if (!result.success) {
+      const fieldErrors: Record<string, string> = {}
+      result.error.issues.forEach((issue) => {
+        const key = issue.path[0] as string
+        if (!fieldErrors[key]) fieldErrors[key] = issue.message
+      })
+      setErrors(fieldErrors)
+      return null
+    }
+    setErrors({})
+    return result.data
+  }
 
-    try {
-      if (editingProduct) {
-        const res = await fetch(`/api/v1/products/${editingProduct.id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        })
-        const data = await res.json()
-        if (!res.ok) throw new Error(data.error)
-        setProducts((prev) =>
-          prev.map((p) => (p.id === editingProduct.id ? { ...p, ...data.product } : p))
-        )
-        showToast('Product updated successfully')
-      } else {
-        const res = await fetch('/api/v1/products', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        })
-        const data = await res.json()
-        if (!res.ok) throw new Error(data.error)
-        setProducts((prev) => [...prev, { ...data.product, inventoryItems: [], createdAt: data.product.createdAt }])
-        showToast('Product created successfully')
-      }
-      closeModal()
-    } catch (err: any) {
-      showToast(err.message || 'Something went wrong', 'error')
-    } finally {
-      setLoading(false)
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    const validated = validateForm()
+    if (!validated) return
+
+    const payload = validated
+
+    if (editingProduct) {
+      startTransition(async () => {
+        addOptimistic({ type: 'update', id: editingProduct.id, updates: payload })
+        try {
+          const res = await fetch(`/api/v1/products/${editingProduct.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          })
+          const data = await res.json()
+          if (!res.ok) throw new Error(data.error)
+          setProducts((prev) =>
+            prev.map((p) => (p.id === editingProduct.id ? { ...p, ...data.product } : p))
+          )
+          showToast('Product updated')
+          closeModal()
+        } catch (err: any) {
+          showToast(err.message || 'Something went wrong', 'error')
+        }
+      })
+    } else {
+      startTransition(async () => {
+        const optimisticId = `new-${Date.now()}`
+        addOptimistic({ type: 'create', item: { ...payload as any, id: optimisticId, deletedAt: null, createdAt: new Date().toISOString(), inventoryItems: [] } })
+        try {
+          const res = await fetch('/api/v1/products', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          })
+          const data = await res.json()
+          if (!res.ok) throw new Error(data.error)
+          setProducts((prev) => [...prev, { ...data.product, inventoryItems: [], createdAt: data.product.createdAt }])
+          showToast('Product created')
+          closeModal()
+        } catch (err: any) {
+          showToast(err.message || 'Failed to create', 'error')
+        }
+      })
     }
   }
 
   async function handleDelete(id: string) {
-    try {
-      const res = await fetch(`/api/v1/products/${id}`, { method: 'DELETE' })
-      if (!res.ok) {
-        const data = await res.json()
-        throw new Error(data.error)
-      }
-      setProducts((prev) => prev.filter((p) => p.id !== id))
-      showToast('Product deleted')
+    startTransition(async () => {
+      addOptimistic({ type: 'delete', id })
       setDeleteConfirm(null)
+      try {
+        const res = await fetch(`/api/v1/products/${id}`, { method: 'DELETE' })
+        if (!res.ok) {
+          const data = await res.json()
+          throw new Error(data.error)
+        }
+        setProducts((prev) => prev.filter((p) => p.id !== id))
+        showToast('Product deleted')
+      } catch (err: any) {
+        showToast(err.message || 'Failed to delete', 'error')
+      }
+    })
+  }
+
+  async function handleRestore(id: string) {
+    startTransition(async () => {
+      const item = products.find((p) => p.id === id)
+      if (item) addOptimistic({ type: 'restore', item })
+      try {
+        const res = await fetch(`/api/v1/products/${id}/restore`, { method: 'POST' })
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error)
+        setProducts((prev) =>
+          prev.map((p) => (p.id === id ? { ...p, deletedAt: null } : p))
+        )
+        showToast('Product restored')
+      } catch (err: any) {
+        showToast(err.message || 'Failed to restore', 'error')
+      }
+    })
+  }
+
+  async function handleLoadMore() {
+    setLoadingMore(true)
+    try {
+      const params = new URLSearchParams(searchParams.toString())
+      params.set('cursor', nextCursor!)
+      params.set('take', '25')
+      const res = await fetch(`/api/v1/products?${params.toString()}`)
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      setProducts((prev) => [...prev, ...data.products])
+      setNextCursor(data.nextCursor)
+      setHasMore(data.hasMore)
     } catch (err: any) {
-      showToast(err.message || 'Failed to delete', 'error')
+      showToast(err.message || 'Failed to load more', 'error')
+    } finally {
+      setLoadingMore(false)
     }
   }
 
@@ -164,126 +268,148 @@ export default function ProductsClient({ initialProducts, warehouses, userRole }
     return item?.quantity || 0
   }
 
+  const clearSearch = useCallback(() => router.push(pathname), [router, pathname])
+
+  const isDeleted = (product: Product) => showDeleted && product.deletedAt !== null
+
   return (
     <div>
-      {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h1 style={{ fontSize: 24, fontWeight: 600, color: 'var(--text-heading)' }}>Products</h1>
-          <p style={{ fontSize: 14, color: 'var(--text-muted)', marginTop: 4 }}>{products.length} products in catalog</p>
+          <p style={{ fontSize: 14, color: 'var(--text-muted)', marginTop: 4 }}>{total} products in catalog</p>
         </div>
-        {isAdmin && (
-          <button onClick={openCreate} className="btn btn-primary" style={{ gap: 8 }}>
-            <Plus style={{ width: 16, height: 16 }} />
-            Add Product
-          </button>
-        )}
+        <div style={{ display: 'flex', gap: 8 }}>
+          {isAdmin && (
+            <a
+              href={showDeleted ? '?' : '?showDeleted=1'}
+              className="btn btn-ghost"
+              style={{ gap: 6, fontSize: 13, color: showDeleted ? 'var(--accent)' : undefined }}
+            >
+              {showDeleted ? 'Hide Deleted' : 'Show Deleted'}
+            </a>
+          )}
+          {isAdmin && (
+            <button onClick={openCreate} className="btn btn-primary" style={{ gap: 8 }}>
+              <Plus style={{ width: 16, height: 16 }} />
+              Add Product
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Search */}
-      <div style={{ marginBottom: 20, position: 'relative' }}>
-        <Search style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', width: 16, height: 16, color: 'var(--text-muted)' }} />
-        <input
-          type="text"
-          placeholder="Search by name, SKU, or category..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="input"
-          style={{ paddingLeft: 36 }}
-        />
-        {search && (
-          <button
-            onClick={() => setSearch('')}
-            style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}
-          >
-            <X style={{ width: 14, height: 14 }} />
-          </button>
-        )}
+      <div style={{ marginBottom: 16 }}>
+        <SearchInput placeholder="Search by name, SKU, or category…" />
       </div>
 
-      {/* Table */}
-      {filtered.length === 0 ? (
+      {optimisticProducts.length === 0 && !showDeleted ? (
         <EmptyState
           icon={Package}
-          title="No products found"
-          description={search ? 'Try a different search term.' : 'Add your first product to get started.'}
-          actionLabel={isAdmin && !search ? 'Add Product' : undefined}
-          onAction={isAdmin && !search ? openCreate : undefined}
+          title={qParam ? 'No products match your search' : 'No products found'}
+          description={qParam ? 'Try a different search term or clear the filter.' : 'Add your first product to get started.'}
+          actionLabel={isAdmin ? 'Add Product' : undefined}
+          onAction={isAdmin ? openCreate : undefined}
+          secondaryActionLabel={qParam ? 'Clear filter' : undefined}
+          onSecondaryAction={qParam ? clearSearch : undefined}
+        />
+      ) : optimisticProducts.length === 0 && showDeleted ? (
+        <EmptyState
+          icon={Package}
+          title="No deleted products"
+          description="All products are active. Toggle off 'Show Deleted' to return."
         />
       ) : (
-        <div className="card" style={{ overflow: 'hidden' }}>
-          <div style={{ overflowX: 'auto' }}>
-            <table className="responsive-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                  <th style={{ padding: '16px 24px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Product</th>
-                  <th style={{ padding: '16px 24px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>SKU</th>
-                  <th style={{ padding: '16px 24px', textAlign: 'right', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Price</th>
-                  {warehouses.map((w) => (
-                    <th key={w.id} style={{ padding: '16px 24px', textAlign: 'center', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{w.name}</th>
-                  ))}
-                  <th style={{ padding: '16px 24px', textAlign: 'center', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total</th>
-                  {isAdmin && <th style={{ padding: '16px 24px', textAlign: 'right', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Actions</th>}
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((product) => {
-                  const total = getTotalStock(product)
-                  return (
-                    <tr key={product.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                      <td data-label="Product" style={{ padding: '16px 24px' }}>
-                        <div>
-                          <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-heading)' }}>{product.name}</p>
-                          {product.category && <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>{product.category}</p>}
-                        </div>
-                      </td>
-                      <td data-label="SKU" style={{ padding: '16px 24px' }}>
-                          <span className="tabular" style={{ fontSize: 14, color: 'var(--accent)' }}>{product.sku}</span>
-                      </td>
-                      <td data-label="Price" style={{ padding: '16px 24px', textAlign: 'right' }}>
-                        <span className="tabular" style={{ fontSize: 14, fontWeight: 500 }}>${product.price.toFixed(2)}</span>
-                      </td>
-                      {warehouses.map((w) => {
-                        const qty = getStockByWarehouse(product, w.id)
-                        const color = qty <= product.reorderPoint ? 'var(--danger)' : qty < product.reorderPoint * 2 ? 'var(--warning)' : 'var(--success)'
-                        return (
-                          <td key={w.id} data-label={w.name} style={{ padding: '16px 24px', textAlign: 'center' }}>
-                            <span className="tabular" style={{ fontSize: 14, fontWeight: 600, color }}>{qty}</span>
-                          </td>
-                        )
-                      })}
-                      <td data-label="Total" style={{ padding: '16px 24px', textAlign: 'center' }}>
-                        <span className="tabular" style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-heading)' }}>{total}</span>
-                      </td>
-                      {isAdmin && (
-                        <td style={{ padding: '16px 24px', textAlign: 'right' }}>
-                          <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
-                            <button onClick={() => openEdit(product)} className="btn btn-ghost" style={{ padding: '8px 8px', minHeight: 'auto', minWidth: 'auto' }} title="Edit">
-                              <Pencil style={{ width: 14, height: 14 }} />
-                            </button>
-                            {deleteConfirm === product.id ? (
-                              <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                                <button onClick={() => handleDelete(product.id)} className="btn btn-danger" style={{ padding: '8px 12px', minHeight: 'auto', fontSize: 12, background: 'rgba(248,113,113,0.1)', color: 'var(--danger)' }}>Delete</button>
-                                <button onClick={() => setDeleteConfirm(null)} className="btn btn-ghost" style={{ padding: '8px 8px', minHeight: 'auto' }}>Cancel</button>
-                              </div>
-                            ) : (
-                              <button onClick={() => setDeleteConfirm(product.id)} className="btn btn-ghost" style={{ padding: '8px 8px', minHeight: 'auto', minWidth: 'auto' }} title="Delete">
-                                <Trash2 style={{ width: 14, height: 14 }} />
-                              </button>
-                            )}
+        <>
+          <div className="card" style={{ overflow: 'hidden', opacity: isPending ? 0.7 : 1 }}>
+            <div style={{ overflowX: 'auto' }}>
+              <table className="responsive-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                    <th style={{ padding: '16px 24px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Product</th>
+                    <th style={{ padding: '16px 24px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>SKU</th>
+                    <th style={{ padding: '16px 24px', textAlign: 'right', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Price</th>
+                    {warehouses.map((w) => (
+                      <th key={w.id} style={{ padding: '16px 24px', textAlign: 'center', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{w.name}</th>
+                    ))}
+                    <th style={{ padding: '16px 24px', textAlign: 'center', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total</th>
+                    {isAdmin && <th style={{ padding: '16px 24px', textAlign: 'right', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Actions</th>}
+                  </tr>
+                </thead>
+                <tbody>
+                  {optimisticProducts.map((product) => {
+                    const total = getTotalStock(product)
+                    const deleted = isDeleted(product)
+                    return (
+                      <tr key={product.id} style={{ borderBottom: '1px solid var(--border)', opacity: deleted ? 0.5 : 1 }}>
+                        <td data-label="Product" style={{ padding: '16px 24px' }}>
+                          <div>
+                            <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-heading)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                              {product.name}
+                              {deleted && <span className="badge" style={{ background: 'rgba(255,255,255,0.06)', color: 'var(--text-muted)', fontSize: 10, padding: '1px 6px' }}>Deleted</span>}
+                            </p>
+                            {product.category && <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>{product.category}</p>}
                           </div>
                         </td>
-                      )}
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+                        <td data-label="SKU" style={{ padding: '16px 24px' }}>
+                            <span className="tabular" style={{ fontSize: 14, color: 'var(--accent)' }}>{product.sku}</span>
+                        </td>
+                        <td data-label="Price" style={{ padding: '16px 24px', textAlign: 'right' }}>
+                          <span className="tabular" style={{ fontSize: 14, fontWeight: 500 }}>${product.price.toFixed(2)}</span>
+                        </td>
+                        {warehouses.map((w) => {
+                          const qty = getStockByWarehouse(product, w.id)
+                          const color = qty <= product.reorderPoint ? 'var(--danger)' : qty < product.reorderPoint * 2 ? 'var(--warning)' : 'var(--success)'
+                          return (
+                            <td key={w.id} data-label={w.name} style={{ padding: '16px 24px', textAlign: 'center' }}>
+                              <span className="tabular" style={{ fontSize: 14, fontWeight: 600, color }}>{qty}</span>
+                            </td>
+                          )
+                        })}
+                        <td data-label="Total" style={{ padding: '16px 24px', textAlign: 'center' }}>
+                          <span className="tabular" style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-heading)' }}>{total}</span>
+                        </td>
+                        {isAdmin && (
+                          <td style={{ padding: '16px 24px', textAlign: 'right' }}>
+                            <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
+                              {deleted ? (
+                                <button onClick={() => handleRestore(product.id)} className="btn btn-ghost" style={{ padding: '8px 8px', minHeight: 'auto', minWidth: 'auto', color: 'var(--success)' }} title="Restore">
+                                  <RotateCcw style={{ width: 14, height: 14 }} />
+                                </button>
+                              ) : (
+                                <>
+                                  <button onClick={() => openEdit(product)} className="btn btn-ghost" style={{ padding: '8px 8px', minHeight: 'auto', minWidth: 'auto' }} title="Edit">
+                                    <Pencil style={{ width: 14, height: 14 }} />
+                                  </button>
+                                  {deleteConfirm === product.id ? (
+                                    <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                                      <button onClick={() => handleDelete(product.id)} className="btn btn-danger" style={{ padding: '8px 12px', minHeight: 'auto', fontSize: 12, background: 'rgba(248,113,113,0.1)', color: 'var(--danger)' }}>Delete</button>
+                                      <button onClick={() => setDeleteConfirm(null)} className="btn btn-ghost" style={{ padding: '8px 8px', minHeight: 'auto' }}>Cancel</button>
+                                    </div>
+                                  ) : (
+                                    <button onClick={() => setDeleteConfirm(product.id)} className="btn btn-ghost" style={{ padding: '8px 8px', minHeight: 'auto', minWidth: 'auto' }} title="Delete">
+                                      <Trash2 style={{ width: 14, height: 14 }} />
+                                    </button>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                          </td>
+                        )}
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+          {cursorMode ? (
+            <CursorPagination totalCount={totalCount!} hasMore={hasMore} loading={loadingMore} onLoadMore={handleLoadMore} />
+          ) : (
+            <PaginationBar total={total!} page={page!} pageSize={pageSize!} />
+          )}
+        </>
       )}
 
-      {/* Create/Edit Modal */}
       {showModal && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
           <div onClick={closeModal} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.7)' }} />
@@ -299,11 +425,13 @@ export default function ProductsClient({ initialProducts, warehouses, userRole }
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
                   <label style={{ display: 'block', fontSize: 14, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 8 }}>SKU *</label>
-                  <input className="input" value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} placeholder="AM-90-WHT-10" required />
+                  <input className="input" value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} placeholder="AM-90-WHT-10" />
+                  {errors.sku && <p style={{ fontSize: 12, color: 'var(--danger)', marginTop: 4 }}>{errors.sku}</p>}
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: 14, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 8 }}>Name *</label>
-                  <input className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Air Max 90" required />
+                  <input className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Air Max 90" />
+                  {errors.name && <p style={{ fontSize: 12, color: 'var(--danger)', marginTop: 4 }}>{errors.name}</p>}
                 </div>
               </div>
 
@@ -315,15 +443,18 @@ export default function ProductsClient({ initialProducts, warehouses, userRole }
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
                 <div>
                   <label style={{ display: 'block', fontSize: 14, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 8 }}>Price *</label>
-                  <input className="input tabular" type="number" step="0.01" min="0" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder="120.00" required />
+                  <input className="input tabular" type="number" step="0.01" min="0" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder="120.00" />
+                  {errors.price && <p style={{ fontSize: 12, color: 'var(--danger)', marginTop: 4 }}>{errors.price}</p>}
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: 14, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 8 }}>Cost Price</label>
                   <input className="input tabular" type="number" step="0.01" min="0" value={form.costPrice} onChange={(e) => setForm({ ...form, costPrice: e.target.value })} placeholder="65.00" />
+                  {errors.costPrice && <p style={{ fontSize: 12, color: 'var(--danger)', marginTop: 4 }}>{errors.costPrice}</p>}
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: 14, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 8 }}>Reorder Point</label>
                   <input className="input tabular" type="number" min="0" value={form.reorderPoint} onChange={(e) => setForm({ ...form, reorderPoint: e.target.value })} placeholder="5" />
+                  {errors.reorderPoint && <p style={{ fontSize: 12, color: 'var(--danger)', marginTop: 4 }}>{errors.reorderPoint}</p>}
                 </div>
               </div>
 
@@ -334,8 +465,8 @@ export default function ProductsClient({ initialProducts, warehouses, userRole }
 
               <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>
                 <button type="button" onClick={closeModal} className="btn btn-ghost">Cancel</button>
-                <button type="submit" disabled={loading} className="btn btn-primary">
-                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : editingProduct ? 'Save Changes' : 'Create Product'}
+                <button type="submit" disabled={isPending} className="btn btn-primary">
+                  {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : editingProduct ? 'Save Changes' : 'Create Product'}
                 </button>
               </div>
             </form>

@@ -1,17 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth, hasScope } from '@/lib/api-auth'
-import { z } from 'zod'
-
-const productSchema = z.object({
-  sku: z.string().min(1, 'SKU is required'),
-  name: z.string().min(1, 'Name is required'),
-  description: z.string().nullable().optional(),
-  price: z.number().positive('Price must be positive'),
-  costPrice: z.number().positive().nullable().optional(),
-  reorderPoint: z.number().int().min(0).default(5),
-  category: z.string().nullable().optional(),
-})
+import { productSchema } from '@/lib/schemas'
+import { parsePagination, parseCursor, parseSearch, buildCursorResponse } from '@/lib/pagination'
 
 export async function GET(req: NextRequest) {
   try {
@@ -19,33 +10,65 @@ export async function GET(req: NextRequest) {
     if (!authResult) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-    const { user } = authResult
 
     const { searchParams } = new URL(req.url)
-    const search = searchParams.get('search') || ''
-    const take = Math.min(Number(searchParams.get('take')) || 100, 500)
-    const skip = Number(searchParams.get('skip')) || 0
+    const q = parseSearch(searchParams)
+    const cursorMode = searchParams.has('cursor')
 
-    const products = await prisma.product.findMany({
-      take,
-      skip,
-      where: {
-        deletedAt: null,
-        ...(search ? {
-          OR: [
-            { name: { contains: search, mode: 'insensitive' } },
-            { sku: { contains: search, mode: 'insensitive' } },
-            { category: { contains: search, mode: 'insensitive' } },
-          ],
-        } : {}),
-      },
-      orderBy: { name: 'asc' },
-      include: {
-        inventoryItems: {
-          include: { warehouse: true },
+    const where = {
+      deletedAt: null,
+      ...(q ? {
+        OR: [
+          { name: { contains: q, mode: 'insensitive' as const } },
+          { sku: { contains: q, mode: 'insensitive' as const } },
+          { category: { contains: q, mode: 'insensitive' as const } },
+        ],
+      } : {}),
+    }
+
+    if (cursorMode) {
+      const { cursor, take } = parseCursor(searchParams)
+      const totalCount = await prisma.product.count({ where })
+      const raw = await prisma.product.findMany({
+        take: take + 1,
+        ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+        where,
+        orderBy: [{ name: 'asc' }, { id: 'asc' }],
+        include: {
+          inventoryItems: {
+            include: { warehouse: true },
+          },
         },
-      },
-    })
+      })
+      const serialized = raw.map((p) => ({
+        ...p,
+        price: Number(p.price),
+        costPrice: p.costPrice ? Number(p.costPrice) : null,
+        inventoryItems: p.inventoryItems.map((item) => ({
+          ...item,
+          warehouse: { id: item.warehouse.id, name: item.warehouse.name },
+        })),
+      }))
+      const { data, nextCursor, hasMore } = buildCursorResponse(serialized, take, totalCount)
+      return NextResponse.json({ products: data, nextCursor, totalCount, hasMore })
+    }
+
+    const { page, pageSize, skip, take } = parsePagination(searchParams)
+
+    const [products, total] = await Promise.all([
+      prisma.product.findMany({
+        skip,
+        take,
+        where,
+        orderBy: [{ name: 'asc' }, { id: 'asc' }],
+        include: {
+          inventoryItems: {
+            include: { warehouse: true },
+          },
+        },
+      }),
+      prisma.product.count({ where }),
+    ])
 
     const serialized = products.map((p) => ({
       ...p,
@@ -57,7 +80,7 @@ export async function GET(req: NextRequest) {
       })),
     }))
 
-    return NextResponse.json({ products: serialized })
+    return NextResponse.json({ products: serialized, total, page, pageSize })
   } catch (error) {
     console.error('[PRODUCTS_GET_ERROR]', error)
     return NextResponse.json({ error: 'Internal server error.' }, { status: 500 })

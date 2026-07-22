@@ -1,13 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth, hasScope } from '@/lib/api-auth'
-import { z } from 'zod'
-
-const customerSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  email: z.string().email().nullable().optional().or(z.literal('')),
-  phone: z.string().min(1, 'Phone is required'),
-})
+import { customerSchema } from '@/lib/schemas'
+import { parsePagination, parseSearch } from '@/lib/pagination'
 
 export async function GET(req: NextRequest) {
   try {
@@ -15,10 +10,28 @@ export async function GET(req: NextRequest) {
     if (!authResult) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-    const { user } = authResult
 
-    const customers = await prisma.customer.findMany({ orderBy: { name: 'asc' } })
-    return NextResponse.json({ customers })
+    const { searchParams } = new URL(req.url)
+    const q = parseSearch(searchParams)
+    const { page, pageSize, skip, take } = parsePagination(searchParams)
+
+    const where = {
+      deletedAt: null,
+      ...(q ? {
+        OR: [
+          { name: { contains: q, mode: 'insensitive' as const } },
+          { email: { contains: q, mode: 'insensitive' as const } },
+          { phone: { contains: q, mode: 'insensitive' as const } },
+        ],
+      } : {}),
+    }
+
+    const [customers, total] = await Promise.all([
+      prisma.customer.findMany({ skip, take, where, orderBy: [{ name: 'asc' }, { id: 'asc' }] }),
+      prisma.customer.count({ where }),
+    ])
+
+    return NextResponse.json({ customers, total, page, pageSize })
   } catch (error) {
     console.error('[CUSTOMERS_GET_ERROR]', error)
     return NextResponse.json({ error: 'Internal server error.' }, { status: 500 })

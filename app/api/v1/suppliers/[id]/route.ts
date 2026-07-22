@@ -1,14 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth, hasScope } from '@/lib/api-auth'
-import { z } from 'zod'
-
-const supplierUpdateSchema = z.object({
-  name: z.string().min(1).optional(),
-  contactName: z.string().optional().nullable(),
-  email: z.string().email().optional().nullable(),
-  phone: z.string().optional().nullable(),
-})
+import { supplierUpdateSchema } from '@/lib/schemas'
 
 export async function GET(
   req: NextRequest,
@@ -23,7 +16,7 @@ export async function GET(
 
     const { id } = await ctx.params
     const supplier = await prisma.supplier.findUnique({ where: { id } })
-    if (!supplier) {
+    if (!supplier || supplier.deletedAt) {
       return NextResponse.json({ error: 'Supplier not found' }, { status: 404 })
     }
 
@@ -88,7 +81,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Supplier not found' }, { status: 404 })
     }
 
-    await prisma.supplier.delete({ where: { id } })
+    await prisma.supplier.update({ where: { id }, data: { deletedAt: new Date() } })
     return NextResponse.json({ message: 'Supplier deleted' })
   } catch (error) {
     console.error('[SUPPLIER_DELETE_ERROR]', error)

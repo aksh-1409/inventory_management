@@ -1,11 +1,12 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useOptimistic, useTransition } from 'react'
 import { Truck, Plus, Search, X, Loader2 } from 'lucide-react'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { useToast } from '@/components/ui/Toast'
 import { CustomSelect } from '@/components/ui/CustomSelect'
 import { ReceivingReportDownload } from '@/components/pdf/TransferPDFs'
+import { receiveSchema } from '@/lib/schemas'
 
 interface Receipt {
   id: string
@@ -25,77 +26,119 @@ interface Supplier { id: string; name: string }
 
 interface Props {
   initialReceipts: Receipt[]
+  totalNumber: number
   products: Product[]
   warehouses: Warehouse[]
   suppliers: Supplier[]
   userRole: string
 }
 
+type OptimisticAction = { type: 'create'; receipt: Receipt }
+
 export default function ReceivingClient({ initialReceipts, products, warehouses, suppliers, userRole }: Props) {
   const { showToast } = useToast()
+  const [isPending, startTransition] = useTransition()
   const [receipts, setReceipts] = useState<Receipt[]>(initialReceipts)
+  const [optimisticReceipts, addOptimistic] = useOptimistic(receipts, (state, action: OptimisticAction) => {
+    if (action.type === 'create') return [action.receipt, ...state]
+    return state
+  })
   const [search, setSearch] = useState('')
   const [showModal, setShowModal] = useState(false)
-  const [loading, setLoading] = useState(false)
   const [form, setForm] = useState({ productId: '', warehouseId: '', supplierId: '', quantity: '', unitCost: '', notes: '' })
+  const [errors, setErrors] = useState<Record<string, string>>({})
 
   const isAdmin = userRole === 'ADMIN'
 
   const filtered = useMemo(() => {
-    if (!search) return receipts
+    if (!search) return optimisticReceipts
     const q = search.toLowerCase()
-    return receipts.filter(
+    return optimisticReceipts.filter(
       (r) => r.product.name.toLowerCase().includes(q) || r.product.sku.toLowerCase().includes(q) || r.warehouse.name.toLowerCase().includes(q)
     )
-  }, [receipts, search])
+  }, [optimisticReceipts, search])
 
   function openCreate() {
     setForm({ productId: '', warehouseId: '', supplierId: '', quantity: '', unitCost: '', notes: '' })
+    setErrors({})
     setShowModal(true)
+  }
+
+  function validateForm() {
+    const payload = {
+      productId: form.productId,
+      warehouseId: form.warehouseId,
+      supplierId: form.supplierId,
+      quantity: parseInt(form.quantity),
+      unitCost: form.unitCost ? parseFloat(form.unitCost) : undefined,
+      notes: form.notes || undefined,
+    }
+    const result = receiveSchema.safeParse(payload)
+    if (!result.success) {
+      const fieldErrors: Record<string, string> = {}
+      result.error.issues.forEach((issue) => {
+        const key = issue.path[0] as string
+        if (!fieldErrors[key]) fieldErrors[key] = issue.message
+      })
+      setErrors(fieldErrors)
+      return null
+    }
+    setErrors({})
+    return result.data
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    setLoading(true)
-    try {
-      const res = await fetch('/api/v1/receive', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          productId: form.productId,
-          warehouseId: form.warehouseId,
-          supplierId: form.supplierId,
-          quantity: parseInt(form.quantity),
-          unitCost: form.unitCost ? parseFloat(form.unitCost) : undefined,
-          notes: form.notes || undefined,
-        }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error)
+    const validated = validateForm()
+    if (!validated) return
 
-      const product = products.find((p) => p.id === form.productId)!
-      const warehouse = warehouses.find((w) => w.id === form.warehouseId)!
-      const supplier = suppliers.find((s) => s.id === form.supplierId)
-      const qty = parseInt(form.quantity)
-      const uc = form.unitCost ? parseFloat(form.unitCost) : null
-      setReceipts((prev) => [{
-        id: data.receipt.id,
-        delta: qty,
-        reference: form.notes || `Received from supplier`,
-        createdAt: data.receipt.createdAt,
-        product: { id: product.id, name: product.name, sku: product.sku },
-        warehouse: { id: warehouse.id, name: warehouse.name },
-        unitCost: uc,
-        totalCost: uc ? qty * uc : null,
-        supplier: supplier ? { id: supplier.id, name: supplier.name } : null,
-      }, ...prev])
-      showToast(`Received ${parseInt(form.quantity)} units`)
+    const qty = validated.quantity
+    const product = products.find((p) => p.id === validated.productId)
+    const warehouse = warehouses.find((w) => w.id === validated.warehouseId)
+    const supplier = suppliers.find((s) => s.id === validated.supplierId)
+
+    startTransition(async () => {
+      addOptimistic({
+        type: 'create',
+        receipt: {
+          id: `new-${Date.now()}`,
+          delta: qty,
+          reference: form.notes || 'Received from supplier',
+          createdAt: new Date().toISOString(),
+          product: product ? { id: product.id, name: product.name, sku: product.sku } : { id: '', name: '', sku: '' },
+          warehouse: warehouse ? { id: warehouse.id, name: warehouse.name } : { id: '', name: '' },
+          unitCost: validated.unitCost ?? null,
+          totalCost: validated.unitCost ? qty * validated.unitCost : null,
+          supplier: supplier ? { id: supplier.id, name: supplier.name } : null,
+        },
+      })
       setShowModal(false)
-    } catch (err: any) {
-      showToast(err.message || 'Failed to receive stock', 'error')
-    } finally {
-      setLoading(false)
-    }
+
+      try {
+        const res = await fetch('/api/v1/receive', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(validated),
+        })
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error)
+
+        setReceipts((prev) => [{
+          id: data.receipt.id,
+          delta: qty,
+          reference: form.notes || 'Received from supplier',
+          createdAt: data.receipt.createdAt,
+          product: product ? { id: product.id, name: product.name, sku: product.sku } : { id: '', name: '', sku: '' },
+          warehouse: warehouse ? { id: warehouse.id, name: warehouse.name } : { id: '', name: '' },
+          unitCost: validated.unitCost ?? null,
+          totalCost: validated.unitCost ? qty * validated.unitCost : null,
+          supplier: supplier ? { id: supplier.id, name: supplier.name } : null,
+        }, ...prev])
+        showToast(`Received ${qty} units`)
+      } catch (err: any) {
+        showToast(err.message || 'Failed to receive stock', 'error')
+      }
+    })
   }
 
   return (
@@ -124,7 +167,7 @@ export default function ReceivingClient({ initialReceipts, products, warehouses,
       {filtered.length === 0 ? (
         <EmptyState icon={Truck} title="No receipts yet" description={search ? 'Try a different search.' : 'Record your first shipment receipt.'} />
       ) : (
-        <div className="card" style={{ overflow: 'hidden' }}>
+        <div className="card" style={{ overflow: 'hidden', opacity: isPending ? 0.7 : 1 }}>
           <div style={{ overflowX: 'auto' }}>
             <table className="responsive-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
@@ -198,8 +241,8 @@ export default function ReceivingClient({ initialReceipts, products, warehouses,
                   value={form.productId}
                   onChange={(v) => setForm({ ...form, productId: v })}
                   placeholder="Select product..."
-                  required
                 />
+                {errors.productId && <p style={{ fontSize: 12, color: 'var(--danger)', marginTop: 4 }}>{errors.productId}</p>}
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
@@ -209,8 +252,8 @@ export default function ReceivingClient({ initialReceipts, products, warehouses,
                     value={form.warehouseId}
                     onChange={(v) => setForm({ ...form, warehouseId: v })}
                     placeholder="Select..."
-                    required
                   />
+                  {errors.warehouseId && <p style={{ fontSize: 12, color: 'var(--danger)', marginTop: 4 }}>{errors.warehouseId}</p>}
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 6 }}>Supplier *</label>
@@ -219,18 +262,20 @@ export default function ReceivingClient({ initialReceipts, products, warehouses,
                     value={form.supplierId}
                     onChange={(v) => setForm({ ...form, supplierId: v })}
                     placeholder="Select..."
-                    required
                   />
+                  {errors.supplierId && <p style={{ fontSize: 12, color: 'var(--danger)', marginTop: 4 }}>{errors.supplierId}</p>}
                 </div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
                   <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 6 }}>Quantity *</label>
-                  <input className="input tabular" type="number" min="1" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} required />
+                  <input className="input tabular" type="number" min="1" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} />
+                  {errors.quantity && <p style={{ fontSize: 12, color: 'var(--danger)', marginTop: 4 }}>{errors.quantity}</p>}
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 6 }}>Unit Cost</label>
                   <input className="input tabular" type="number" step="0.01" min="0" value={form.unitCost} onChange={(e) => setForm({ ...form, unitCost: e.target.value })} placeholder="Optional" />
+                  {errors.unitCost && <p style={{ fontSize: 12, color: 'var(--danger)', marginTop: 4 }}>{errors.unitCost}</p>}
                 </div>
               </div>
               <div>
@@ -239,8 +284,8 @@ export default function ReceivingClient({ initialReceipts, products, warehouses,
               </div>
               <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>
                 <button type="button" onClick={() => setShowModal(false)} className="btn btn-ghost">Cancel</button>
-                <button type="submit" disabled={loading} className="btn btn-primary">
-                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Receive Stock'}
+                <button type="submit" disabled={isPending} className="btn btn-primary">
+                  {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Receive Stock'}
                 </button>
               </div>
             </form>

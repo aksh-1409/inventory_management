@@ -1,14 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth, hasScope } from '@/lib/api-auth'
-import { z } from 'zod'
+import { createApiKeySchema } from '@/lib/schemas'
 import crypto from 'crypto'
-
-const createSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  scopes: z.array(z.string()).min(1, 'At least one scope required'),
-  expiresInDays: z.number().int().positive().optional(),
-})
 
 function generateApiKey(): string {
   const raw = crypto.randomBytes(32).toString('hex')
@@ -54,7 +48,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json()
-    const result = createSchema.safeParse(body)
+    const result = createApiKeySchema.safeParse(body)
     if (!result.success) {
       return NextResponse.json({ error: result.error.issues[0].message }, { status: 400 })
     }
