@@ -1,15 +1,10 @@
 import { NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
-import { z } from 'zod'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { resetRateLimit } from '@/lib/rate-limit'
 import { normalizeEmail } from '@/lib/email'
-
-const changePasswordSchema = z.object({
-  currentPassword: z.string().min(1),
-  newPassword: z.string().min(8),
-})
+import { changePasswordSchema } from '@/lib/schemas'
 
 const COOLDOWN_MS = 24 * 60 * 60 * 1000
 

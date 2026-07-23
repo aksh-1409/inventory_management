@@ -1,16 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
-import { z } from 'zod'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { normalizeEmail } from '@/lib/email'
-
-const signupSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters'),
-  email: z.string().email('Please enter a valid email address'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
-  warehouseId: z.string().min(1, 'Please select a warehouse'),
-})
+import { signupSchema } from '@/lib/schemas'
 
 export async function POST(req: NextRequest) {
   try {

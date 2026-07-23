@@ -1,7 +1,7 @@
 'use client'
 
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react'
-import { CheckCircle2, AlertCircle, X } from 'lucide-react'
+import { CheckCircle2, AlertCircle, X, RotateCcw } from 'lucide-react'
 
 export type ToastType = 'success' | 'error'
 
@@ -9,10 +9,11 @@ interface ToastMessage {
   id: string
   message: string
   type: ToastType
+  onUndo?: () => void
 }
 
 interface ToastContextValue {
-  showToast: (message: string, type?: ToastType) => void
+  showToast: (message: string, type?: ToastType, onUndo?: () => void) => void
 }
 
 const ToastContext = createContext<ToastContextValue | undefined>(undefined)
@@ -20,8 +21,8 @@ const ToastContext = createContext<ToastContextValue | undefined>(undefined)
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toast, setToast] = useState<ToastMessage | null>(null)
 
-  const showToast = useCallback((message: string, type: ToastType = 'success') => {
-    setToast({ id: Math.random().toString(), message, type })
+  const showToast = useCallback((message: string, type: ToastType = 'success', onUndo?: () => void) => {
+    setToast({ id: Math.random().toString(), message, type, onUndo })
   }, [])
 
   useEffect(() => {
@@ -51,14 +52,24 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             <div className="flex-1">
               <p className="text-sm font-medium text-[var(--text-heading)]">{toast.message}</p>
             </div>
-            <button
-              onClick={() => setToast(null)}
-              className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
-            >
-              <X className="w-4 h-4" />
-            </button>
+            <div className="flex items-center gap-1">
+              {toast.onUndo && (
+                <button
+                  onClick={() => { toast.onUndo?.(); setToast(null) }}
+                  className="text-[var(--accent)] hover:text-[var(--text-heading)] transition-colors cursor-pointer p-1"
+                  title="Undo"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                </button>
+              )}
+              <button
+                onClick={() => setToast(null)}
+                className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
 
-            {/* Progress bar */}
             <div className="absolute bottom-0 left-0 h-1 bg-[var(--border)] w-full">
               <div
                 className={`h-full animate-[toast-progress_4s_linear_forwards] ${

@@ -1,12 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth, hasScope } from '@/lib/api-auth'
-import { z } from 'zod'
-
-const warehouseUpdateSchema = z.object({
-  name: z.string().min(1).optional(),
-  location: z.string().optional().nullable(),
-})
+import { warehouseUpdateSchema } from '@/lib/schemas'
+import { auditLog } from '@/lib/audit'
 
 export async function GET(
   req: NextRequest,
@@ -27,7 +23,7 @@ export async function GET(
       },
     })
 
-    if (!warehouse) {
+    if (!warehouse || warehouse.deletedAt) {
       return NextResponse.json({ error: 'Warehouse not found' }, { status: 404 })
     }
 
@@ -48,7 +44,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
     const { user } = authResult
-    if (!hasScope(user, 'warehouses:write')) {
+    if (!hasScope(user, 'warehouses:write') || user.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
@@ -68,6 +64,7 @@ export async function PATCH(
       where: { id },
       data: result.data,
     })
+    await auditLog(user.id, 'Warehouse', id, 'UPDATE', { before: existing, after: warehouse })
 
     return NextResponse.json({ warehouse })
   } catch (error) {
@@ -86,7 +83,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
     const { user } = authResult
-    if (!hasScope(user, 'warehouses:write')) {
+    if (!hasScope(user, 'warehouses:write') || user.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
@@ -105,7 +102,8 @@ export async function DELETE(
       )
     }
 
-    await prisma.warehouse.delete({ where: { id } })
+    await prisma.warehouse.update({ where: { id }, data: { deletedAt: new Date() } })
+    await auditLog(user.id, 'Warehouse', id, 'DELETE')
 
     return NextResponse.json({ message: 'Warehouse deleted' })
   } catch (error) {

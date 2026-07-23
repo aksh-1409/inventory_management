@@ -89,9 +89,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   callbacks: {
     ...authConfig.callbacks,
     async jwt({ token, user, trigger }) {
-      // On initial sign-in, resolve the DB user by email.
-      // Handles both credentials (authorize returns DB user with id)
-      // and OAuth (profile id may be undefined or not match our DB).
+      // On sign-in, resolve the DB user by email and copy all fields to token.
+      // Handles credentials (authorize returns DB user) and OAuth (provider profile).
       if (user && user.email) {
         const dbUser = await prisma.user.findUnique({
           where: { email: normalizeEmail(user.email) },
@@ -99,19 +98,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         })
         if (dbUser) {
           token.id = dbUser.id
+          token.name = dbUser.name
           token.role = dbUser.role
           token.warehouseId = dbUser.warehouseId
           token.warehouseName = dbUser.warehouse?.name ?? null
           token.emailVerifiedAt = dbUser.emailVerified?.toISOString() ?? null
           token.passwordSetAt = dbUser.passwordSetAt?.toISOString() ?? null
         }
-      } else if (user) {
-        token.id = user.id ?? (user as any).id
-        token.role = (user as any).role
-        token.warehouseId = (user as any).warehouseId ?? null
-        token.warehouseName = (user as any).warehouseName ?? null
-        token.emailVerifiedAt = (user as any).emailVerifiedAt?.toString?.() ?? null
-        token.passwordSetAt = (user as any).passwordSetAt?.toString?.() ?? null
       }
       // On token refresh, re-fetch current role from DB
       if (trigger === 'update' && token.id) {
@@ -120,6 +113,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           include: { warehouse: true },
         })
         if (freshUser) {
+          token.name = freshUser.name
           token.role = freshUser.role
           token.warehouseId = freshUser.warehouseId
           token.warehouseName = freshUser.warehouse?.name ?? null
@@ -132,11 +126,29 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async signIn({ user, account }) {
       if (user.email) resetRateLimit(`login:account:${normalizeEmail(user.email)}`)
 
-      // Auto-link OAuth accounts: create user if not exists — no warehouse assigned yet
+      // Handle OAuth sign-in (not credentials)
       if (account?.provider !== 'credentials' && user.email) {
         const email = normalizeEmail(user.email)
         const existing = await prisma.user.findUnique({ where: { email } })
-        if (!existing) {
+
+        if (existing) {
+          // Existing user — preserve warehouseId and passwordSetAt.
+          // Update name from OAuth only if the user hasn't set one yet.
+          if (!existing.name || existing.name === '') {
+            await prisma.user.update({
+              where: { id: existing.id },
+              data: { name: user.name ?? existing.name },
+            })
+          }
+          // Ensure email is verified for OAuth sign-ins
+          if (!existing.emailVerified) {
+            await prisma.user.update({
+              where: { id: existing.id },
+              data: { emailVerified: new Date() },
+            })
+          }
+        } else {
+          // New user — create with no password/warehouse, setup page will prompt
           await prisma.user.create({
             data: {
               name: user.name ?? '',

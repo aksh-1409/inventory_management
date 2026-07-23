@@ -1,14 +1,9 @@
 import { NextResponse } from 'next/server'
+import bcrypt from 'bcryptjs'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import bcrypt from 'bcryptjs'
-import { z } from 'zod'
-
-const setupSchema = z.object({
-  name: z.string().trim().min(2, 'Name must be at least 2 characters'),
-  warehouseId: z.string().optional(),
-  password: z.string().min(8, 'Password must be at least 8 characters').optional(),
-})
+import { checkRateLimit } from '@/lib/rate-limit'
+import { setupSchema } from '@/lib/schemas'
 
 export async function PUT(req: Request) {
   try {

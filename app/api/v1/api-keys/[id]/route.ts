@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth, hasScope } from '@/lib/api-auth'
+import { auditLog } from '@/lib/audit'
 
 export async function DELETE(
   req: NextRequest,
@@ -27,6 +28,7 @@ export async function DELETE(
     }
 
     await prisma.apiKey.delete({ where: { id } })
+    await auditLog(user.id, 'ApiKey', id, 'DELETE')
 
     return NextResponse.json({ success: true })
   } catch (error) {

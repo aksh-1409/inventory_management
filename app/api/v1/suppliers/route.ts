@@ -1,14 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth, hasScope } from '@/lib/api-auth'
-import { z } from 'zod'
-
-const supplierSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  contactName: z.string().nullable().optional(),
-  email: z.string().email().nullable().optional().or(z.literal('')),
-  phone: z.string().nullable().optional(),
-})
+import { supplierSchema } from '@/lib/schemas'
+import { parsePagination, parseSearch } from '@/lib/pagination'
+import { auditLog } from '@/lib/audit'
 
 export async function GET(req: NextRequest) {
   try {
@@ -16,10 +11,28 @@ export async function GET(req: NextRequest) {
     if (!authResult) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-    const { user } = authResult
 
-    const suppliers = await prisma.supplier.findMany({ orderBy: { name: 'asc' } })
-    return NextResponse.json({ suppliers })
+    const { searchParams } = new URL(req.url)
+    const q = parseSearch(searchParams)
+    const { page, pageSize, skip, take } = parsePagination(searchParams)
+
+    const where = {
+      deletedAt: null,
+      ...(q ? {
+        OR: [
+          { name: { contains: q, mode: 'insensitive' as const } },
+          { contactName: { contains: q, mode: 'insensitive' as const } },
+          { email: { contains: q, mode: 'insensitive' as const } },
+        ],
+      } : {}),
+    }
+
+    const [suppliers, total] = await Promise.all([
+      prisma.supplier.findMany({ skip, take, where, orderBy: [{ name: 'asc' }, { id: 'asc' }] }),
+      prisma.supplier.count({ where }),
+    ])
+
+    return NextResponse.json({ suppliers, total, page, pageSize })
   } catch (error) {
     console.error('[SUPPLIERS_GET_ERROR]', error)
     return NextResponse.json({ error: 'Internal server error.' }, { status: 500 })
@@ -45,6 +58,7 @@ export async function POST(req: NextRequest) {
 
     const data = { ...result.data, email: result.data.email || null }
     const supplier = await prisma.supplier.create({ data })
+    await auditLog(user.id, 'Supplier', supplier.id, 'CREATE', { after: supplier })
 
     return NextResponse.json({ supplier }, { status: 201 })
   } catch (error) {

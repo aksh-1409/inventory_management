@@ -115,7 +115,8 @@ export default function DashboardClient({ stats, products, warehouses, matrix, p
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16 }} className="dashboard-bottom-grid">
+          <style>{`@media (min-width: 640px) { .dashboard-bottom-grid { grid-template-columns: 1fr 1fr; } }`}</style>
           {/* Pending Transfers */}
           <div className="card" style={{ padding: 20 }}>
             <h3 style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-heading)', marginBottom: 16 }}>Active Transfers</h3>

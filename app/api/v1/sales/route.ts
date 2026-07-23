@@ -2,16 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth, hasScope } from '@/lib/api-auth'
 import { dispatchWebhook } from '@/lib/webhooks'
-import { z } from 'zod'
-
-const saleSchema = z.object({
-  productId: z.string().min(1),
-  warehouseId: z.string().min(1),
-  customerId: z.string().min(1),
-  quantity: z.coerce.number().int().positive(),
-  unitPrice: z.coerce.number().positive(),
-  notes: z.string().optional(),
-})
+import { saleSchema } from '@/lib/schemas'
+import { auditLog } from '@/lib/audit'
 
 export async function POST(req: NextRequest) {
   try {
@@ -75,6 +67,7 @@ export async function POST(req: NextRequest) {
       saleId: transaction.id, productId, warehouseId, customerId, quantity, unitPrice,
       total: quantity * unitPrice, remainingStock: updatedItem.quantity,
     })
+    await auditLog(user.id, 'Sale', transaction.id, 'CREATE', { after: transaction })
 
     // Fetch related names for response
     const [product, warehouse, customer] = await Promise.all([

@@ -1,17 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth, hasScope } from '@/lib/api-auth'
-import { z } from 'zod'
-
-const productUpdateSchema = z.object({
-  sku: z.string().min(1).optional(),
-  name: z.string().min(1).optional(),
-  description: z.string().optional().nullable(),
-  price: z.number().positive().optional(),
-  costPrice: z.number().positive().optional().nullable(),
-  reorderPoint: z.number().int().min(0).optional(),
-  category: z.string().optional().nullable(),
-})
+import { productUpdateSchema } from '@/lib/schemas'
+import { auditLog } from '@/lib/audit'
 
 export async function GET(
   req: NextRequest,
@@ -65,7 +56,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
     const { user } = authResult
-    if (!hasScope(user, 'products:write')) {
+    if (!hasScope(user, 'products:write') || user.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
@@ -93,6 +84,7 @@ export async function PATCH(
       where: { id },
       data: result.data,
     })
+    await auditLog(user.id, 'Product', id, 'UPDATE', { before: existing, after: product })
 
     return NextResponse.json({
       product: {
@@ -117,7 +109,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
     const { user } = authResult
-    if (!hasScope(user, 'products:write')) {
+    if (!hasScope(user, 'products:write') || user.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
@@ -132,6 +124,7 @@ export async function DELETE(
       where: { id },
       data: { deletedAt: new Date() },
     })
+    await auditLog(user.id, 'Product', id, 'DELETE')
 
     return NextResponse.json({ message: 'Product deleted' })
   } catch (error) {

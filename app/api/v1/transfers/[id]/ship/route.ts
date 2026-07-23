@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth, hasScope } from '@/lib/api-auth'
-import { z } from 'zod'
-
-const shipSchema = z.object({
-  trackingNumber: z.string().optional(),
-})
+import { transferShipSchema } from '@/lib/schemas'
+import { auditLog } from '@/lib/audit'
 
 export async function POST(
   req: NextRequest,
@@ -24,7 +21,7 @@ export async function POST(
 
     const { id } = await ctx.params
     const body = await req.json()
-    const result = shipSchema.safeParse(body)
+    const result = transferShipSchema.safeParse(body)
     if (!result.success) {
       return NextResponse.json({ error: result.error.issues[0].message }, { status: 400 })
     }
@@ -56,6 +53,7 @@ export async function POST(
         toWarehouse: true,
       },
     })
+    await auditLog(user.id, 'Transfer', id, 'UPDATE', { after: 'shipped' })
 
     return NextResponse.json({ transfer })
   } catch (error) {

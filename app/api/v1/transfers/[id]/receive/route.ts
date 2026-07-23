@@ -2,13 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth, hasScope } from '@/lib/api-auth'
 import { dispatchWebhook } from '@/lib/webhooks'
-import { z } from 'zod'
-
-const receiveSchema = z.object({
-  quantityReceived: z.number().int().positive(),
-  damagedQuantity: z.number().int().min(0).optional(),
-  notes: z.string().optional(),
-})
+import { transferReceiveSchema } from '@/lib/schemas'
+import { auditLog } from '@/lib/audit'
 
 export async function POST(
   req: NextRequest,
@@ -27,7 +22,7 @@ export async function POST(
 
     const { id } = await ctx.params
     const body = await req.json()
-    const result = receiveSchema.safeParse(body)
+    const result = transferReceiveSchema.safeParse(body)
     if (!result.success) {
       return NextResponse.json({ error: result.error.issues[0].message }, { status: 400 })
     }
@@ -123,6 +118,7 @@ export async function POST(
       quantityReceived,
       damagedQuantity,
     })
+    await auditLog(user.id, 'Transfer', id, 'UPDATE', { after: 'received' })
 
     return NextResponse.json({ transfer })
   } catch (error: any) {

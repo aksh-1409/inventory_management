@@ -1,13 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth, hasScope } from '@/lib/api-auth'
-import { z } from 'zod'
-
-const customerUpdateSchema = z.object({
-  name: z.string().min(1).optional(),
-  email: z.string().email().optional().nullable(),
-  phone: z.string().min(1).optional(),
-})
+import { customerUpdateSchema } from '@/lib/schemas'
+import { auditLog } from '@/lib/audit'
 
 export async function GET(
   req: NextRequest,
@@ -22,7 +17,7 @@ export async function GET(
 
     const { id } = await ctx.params
     const customer = await prisma.customer.findUnique({ where: { id } })
-    if (!customer) {
+    if (!customer || customer.deletedAt) {
       return NextResponse.json({ error: 'Customer not found' }, { status: 404 })
     }
 
@@ -44,7 +39,7 @@ export async function PATCH(
     }
     const { user } = authResult
 
-    if (!hasScope(user, 'customers:write')) {
+    if (!hasScope(user, 'customers:write') || user.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
@@ -69,6 +64,7 @@ export async function PATCH(
     }
 
     const customer = await prisma.customer.update({ where: { id }, data: result.data })
+    await auditLog(user.id, 'Customer', id, 'UPDATE', { before: existing, after: customer })
     return NextResponse.json({ customer })
   } catch (error) {
     console.error('[CUSTOMER_PATCH_ERROR]', error)
@@ -87,7 +83,7 @@ export async function DELETE(
     }
     const { user } = authResult
 
-    if (!hasScope(user, 'customers:write')) {
+    if (!hasScope(user, 'customers:write') || user.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
@@ -97,7 +93,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'Customer not found' }, { status: 404 })
     }
 
-    await prisma.customer.delete({ where: { id } })
+    await prisma.customer.update({ where: { id }, data: { deletedAt: new Date() } })
+    await auditLog(user.id, 'Customer', id, 'DELETE')
     return NextResponse.json({ message: 'Customer deleted' })
   } catch (error) {
     console.error('[CUSTOMER_DELETE_ERROR]', error)
