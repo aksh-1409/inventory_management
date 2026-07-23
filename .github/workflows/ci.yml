@@ -15,7 +15,7 @@ jobs:
         image: postgres:16
         env:
           POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: password
+          POSTGRES_PASSWORD: postgres
           POSTGRES_DB: stockpilot_test
         ports:
           - 5432:5432
@@ -43,11 +43,11 @@ jobs:
 
       - run: npx prisma generate
         env:
-          DATABASE_URL: postgresql://postgres:password@localhost:5432/stockpilot_test
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/stockpilot_test
 
       - run: npm test
         env:
-          DATABASE_URL: postgresql://postgres:password@localhost:5432/stockpilot_test
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/stockpilot_test
 
   e2e:
     runs-on: ubuntu-latest
@@ -58,7 +58,7 @@ jobs:
         image: postgres:16
         env:
           POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: password
+          POSTGRES_PASSWORD: postgres
           POSTGRES_DB: stockpilot_test
         ports:
           - 5432:5432
@@ -80,16 +80,16 @@ jobs:
 
       - run: npx prisma generate
         env:
-          DATABASE_URL: postgresql://postgres:password@localhost:5432/stockpilot_test
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/stockpilot_test
 
       - run: npx prisma db push
         env:
-          DATABASE_URL: postgresql://postgres:password@localhost:5432/stockpilot_test
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/stockpilot_test
 
       - run: npx playwright install chromium
 
       - run: npm run test:e2e
         env:
-          DATABASE_URL: postgresql://postgres:password@localhost:5432/stockpilot_test
-          NEXTAUTH_SECRET: stockpilot-super-secret-key-change-in-production-2024
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/stockpilot_test
+          NEXTAUTH_SECRET: placeholder-dev-secret
           NEXTAUTH_URL: http://localhost:3000
