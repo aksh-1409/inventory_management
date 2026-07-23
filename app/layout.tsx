@@ -1,11 +1,11 @@
-import type { Metadata, Viewport } from 'next'
-import './globals.css'
-import Providers from '@/components/Providers'
+import type { Metadata, Viewport } from 'next';
+import './globals.css';
+import Providers from '@/components/Providers';
 
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-}
+};
 
 export const metadata: Metadata = {
   title: {
@@ -17,12 +17,12 @@ export const metadata: Metadata = {
   keywords: ['inventory management', 'warehouse', 'stock control', 'retail', 'supply chain'],
   authors: [{ name: 'Urban Sole' }],
   robots: 'noindex, nofollow', // Keep private for demo
-}
+};
 
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode
+  children: React.ReactNode;
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
@@ -34,5 +34,5 @@ export default function RootLayout({
         <Providers>{children}</Providers>
       </body>
     </html>
-  )
+  );
 }

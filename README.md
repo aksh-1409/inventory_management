@@ -14,15 +14,15 @@ Open-source, self-hosted multi-warehouse inventory management system for retail 
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Framework | Next.js 16 (App Router) |
-| Language | TypeScript (strict) |
-| ORM | Prisma 7 |
-| Database | PostgreSQL |
-| Auth | NextAuth v5 (Credentials + JWT) |
-| UI | Tailwind CSS + custom components |
-| PDF | @react-pdf/renderer |
+| Layer     | Technology                       |
+| --------- | -------------------------------- |
+| Framework | Next.js 16 (App Router)          |
+| Language  | TypeScript (strict)              |
+| ORM       | Prisma 7                         |
+| Database  | PostgreSQL                       |
+| Auth      | NextAuth v5 (Credentials + JWT)  |
+| UI        | Tailwind CSS + custom components |
+| PDF       | @react-pdf/renderer              |
 
 ## Quick Start
 
@@ -54,6 +54,7 @@ NEXTAUTH_URL="http://localhost:3000"
 ```
 
 Generate a secret:
+
 ```bash
 openssl rand -base64 32
 ```
@@ -78,11 +79,11 @@ Open [http://localhost:3000](http://localhost:3000)
 
 ## Demo Credentials
 
-| Email | Password | Role | Warehouse |
-|-------|----------|------|-----------|
-| sarah@urbansole.com | password123 | Admin | All |
-| demo@demo.com | password123 | Admin | All |
-| mike@urbansole.com | password123 | Operator | LA Store |
+| Email               | Password    | Role     | Warehouse |
+| ------------------- | ----------- | -------- | --------- |
+| sarah@urbansole.com | password123 | Admin    | All       |
+| demo@demo.com       | password123 | Admin    | All       |
+| mike@urbansole.com  | password123 | Operator | LA Store  |
 
 ## Docker
 
@@ -138,11 +139,13 @@ Or use the included `render.yaml` for automatic setup.
 All `/api/v1/*` routes support two auth methods:
 
 **Session auth** (browser):
+
 ```
 Cookie: next-auth.session-token=...
 ```
 
 **API key auth** (programmatic):
+
 ```
 Authorization: Bearer sp_live_...
 ```
@@ -151,16 +154,16 @@ Create API keys at `/dashboard/api-keys` (admin only).
 
 ### Available Endpoints
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/v1/products` | List products |
-| POST | `/api/v1/products` | Create product (admin) |
-| GET | `/api/v1/warehouses` | List warehouses (public) |
-| GET | `/api/v1/inventory` | List inventory items |
-| POST | `/api/v1/sales` | Record a sale |
-| POST | `/api/v1/receive` | Receive stock |
-| GET | `/api/v1/transfers` | List transfers |
-| POST | `/api/v1/transfers` | Create transfer request |
+| Method | Endpoint             | Description              |
+| ------ | -------------------- | ------------------------ |
+| GET    | `/api/v1/products`   | List products            |
+| POST   | `/api/v1/products`   | Create product (admin)   |
+| GET    | `/api/v1/warehouses` | List warehouses (public) |
+| GET    | `/api/v1/inventory`  | List inventory items     |
+| POST   | `/api/v1/sales`      | Record a sale            |
+| POST   | `/api/v1/receive`    | Receive stock            |
+| GET    | `/api/v1/transfers`  | List transfers           |
+| POST   | `/api/v1/transfers`  | Create transfer request  |
 
 ## License
 

@@ -1,17 +1,17 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { Trash2, X } from 'lucide-react'
-import { ConfirmModal } from './ConfirmModal'
+import { useState } from 'react';
+import { Trash2, X } from 'lucide-react';
+import { ConfirmModal } from './ConfirmModal';
 
 interface SelectionBarProps {
-  count: number
-  totalCount: number
-  isAllPages: boolean
-  entityLabel: string
-  onClear: () => void
-  onDeleteSelected: () => Promise<void>
-  deleteLabel?: string
+  count: number;
+  totalCount: number;
+  isAllPages: boolean;
+  entityLabel: string;
+  onClear: () => void;
+  onDeleteSelected: () => Promise<void>;
+  deleteLabel?: string;
 }
 
 export function SelectionBar({
@@ -23,22 +23,22 @@ export function SelectionBar({
   onDeleteSelected,
   deleteLabel = 'Delete',
 }: SelectionBarProps) {
-  const [showConfirm, setShowConfirm] = useState(false)
-  const [loading, setLoading] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  if (count === 0 && !isAllPages) return null
+  if (count === 0 && !isAllPages) return null;
 
   const label = isAllPages
     ? `All ${totalCount} ${entityLabel} selected`
-    : `${count} ${entityLabel} selected`
+    : `${count} ${entityLabel} selected`;
 
   async function handleDelete() {
-    setLoading(true)
+    setLoading(true);
     try {
-      await onDeleteSelected()
+      await onDeleteSelected();
     } finally {
-      setLoading(false)
-      setShowConfirm(false)
+      setLoading(false);
+      setShowConfirm(false);
     }
   }
 
@@ -46,16 +46,19 @@ export function SelectionBar({
     <>
       <div
         style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '8px 16px', background: 'rgba(59,158,255,0.08)',
-          borderBottom: '1px solid var(--border)', gap: 8, flexWrap: 'wrap',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '8px 16px',
+          background: 'rgba(59,158,255,0.08)',
+          borderBottom: '1px solid var(--border)',
+          gap: 8,
+          flexWrap: 'wrap',
         }}
         role="status"
         aria-live="polite"
       >
-        <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--accent)' }}>
-          {label}
-        </span>
+        <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--accent)' }}>{label}</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <button
             className="btn btn-ghost"
@@ -86,5 +89,5 @@ export function SelectionBar({
         loading={loading}
       />
     </>
-  )
+  );
 }

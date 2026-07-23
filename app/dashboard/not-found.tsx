@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import Link from 'next/link';
 
 export default function DashboardNotFound() {
   return (
@@ -16,5 +16,5 @@ export default function DashboardNotFound() {
         </Link>
       </div>
     </div>
-  )
+  );
 }

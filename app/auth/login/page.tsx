@@ -1,15 +1,15 @@
-'use client'
+'use client';
 
-import { useState, useEffect, Suspense } from 'react'
-import { signIn, getProviders } from 'next-auth/react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import Link from 'next/link'
-import { Eye, EyeOff, Package, Loader2, AlertCircle } from 'lucide-react'
+import { useState, useEffect, Suspense } from 'react';
+import { signIn, getProviders } from 'next-auth/react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import { Eye, EyeOff, Package, Loader2, AlertCircle } from 'lucide-react';
 
 const DEMO_ACCOUNTS = [
   { label: 'Sarah (Admin)', email: 'sarah@urbansole.com', password: 'password123' },
   { label: 'Mike (Operator)', email: 'mike@urbansole.com', password: 'password123' },
-]
+];
 
 const ERROR_MESSAGES: Record<string, string> = {
   Configuration: 'Authentication is not available right now. Please wait a moment and try again.',
@@ -17,58 +17,58 @@ const ERROR_MESSAGES: Record<string, string> = {
   AccessDenied: 'Access denied. You do not have permission to sign in.',
   rate_limited: 'Too many failed attempts. Please wait before trying again.',
   Default: 'An error occurred. Please try again.',
-}
+};
 
 function LoginForm() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const callbackUrl = searchParams?.get('callbackUrl') || '/dashboard'
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams?.get('callbackUrl') || '/dashboard';
 
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [oauthProviders, setOauthProviders] = useState<string[]>([])
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [oauthProviders, setOauthProviders] = useState<string[]>([]);
 
   useEffect(() => {
-    const errParam = searchParams?.get('error')
-    const codeParam = searchParams?.get('code')
-    if (errParam) setError(ERROR_MESSAGES[codeParam || errParam] || ERROR_MESSAGES.Default)
-    if (searchParams?.get('registered') === 'true') setError(null)
+    const errParam = searchParams?.get('error');
+    const codeParam = searchParams?.get('code');
+    if (errParam) setError(ERROR_MESSAGES[codeParam || errParam] || ERROR_MESSAGES.Default);
+    if (searchParams?.get('registered') === 'true') setError(null);
 
-    getProviders().then(providers => {
+    getProviders().then((providers) => {
       if (providers) {
-        setOauthProviders(Object.keys(providers).filter(p => p !== 'credentials'))
+        setOauthProviders(Object.keys(providers).filter((p) => p !== 'credentials'));
       }
-    })
-  }, [searchParams])
+    });
+  }, [searchParams]);
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setLoading(true)
-    setError(null)
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
 
     const res = await signIn('credentials', {
       email,
       password,
       redirect: false,
-    })
+    });
 
-    setLoading(false)
+    setLoading(false);
 
     if (res?.error) {
-      setError(ERROR_MESSAGES[res.error] || res.error)
+      setError(ERROR_MESSAGES[res.error] || res.error);
     } else {
-      router.push(callbackUrl)
-      router.refresh()
+      router.push(callbackUrl);
+      router.refresh();
     }
   }
 
   function fillDemo(account: (typeof DEMO_ACCOUNTS)[0]) {
-    setEmail(account.email)
-    setPassword(account.password)
-    setError(null)
+    setEmail(account.email);
+    setPassword(account.password);
+    setError(null);
   }
 
   const inputStyle: React.CSSProperties = {
@@ -79,33 +79,63 @@ function LoginForm() {
     padding: '8px 16px',
     color: 'white',
     fontSize: 14,
-    transition: 'border-color var(--dur-transition) var(--ease), box-shadow var(--dur-transition) var(--ease)',
-  }
+    transition:
+      'border-color var(--dur-transition) var(--ease), box-shadow var(--dur-transition) var(--ease)',
+  };
 
   return (
-    <div style={{
-      background: 'rgba(255,255,255,0.05)',
-      backdropFilter: 'blur(24px)',
-      WebkitBackdropFilter: 'blur(24px)',
-      border: '1px solid var(--border)',
-      borderRadius: 12,
-      padding: 32,
-      boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)',
-    }}>
+    <div
+      style={{
+        background: 'rgba(255,255,255,0.05)',
+        backdropFilter: 'blur(24px)',
+        WebkitBackdropFilter: 'blur(24px)',
+        border: '1px solid var(--border)',
+        borderRadius: 12,
+        padding: 32,
+        boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)',
+      }}
+    >
       <div style={{ marginBottom: 28 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 600, color: 'white', marginBottom: 4 }}>Welcome back</h1>
-        <p style={{ fontSize: 14, color: 'rgba(161,161,170,1)' }}>Sign in to your inventory control tower</p>
+        <h1 style={{ fontSize: 24, fontWeight: 600, color: 'white', marginBottom: 4 }}>
+          Welcome back
+        </h1>
+        <p style={{ fontSize: 14, color: 'rgba(161,161,170,1)' }}>
+          Sign in to your inventory control tower
+        </p>
       </div>
 
       {(searchParams?.get('registered') === 'true' || searchParams?.get('reset') === 'true') && (
-        <div style={{ marginBottom: 16, background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)', color: '#4ade80', borderRadius: 8, padding: '10px 12px', fontSize: 13 }}>
-          {searchParams?.get('reset') === 'true' ? 'Password updated. Sign in with your new password.' : 'Account created successfully. You can now sign in.'}
+        <div
+          style={{
+            marginBottom: 16,
+            background: 'rgba(34,197,94,0.1)',
+            border: '1px solid rgba(34,197,94,0.2)',
+            color: '#4ade80',
+            borderRadius: 8,
+            padding: '10px 12px',
+            fontSize: 13,
+          }}
+        >
+          {searchParams?.get('reset') === 'true'
+            ? 'Password updated. Sign in with your new password.'
+            : 'Account created successfully. You can now sign in.'}
         </div>
       )}
 
       {/* Demo Account Quick-Fill */}
       <div style={{ marginBottom: 20 }}>
-        <p style={{ fontSize: 11, color: 'rgba(161,161,170,0.6)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 500 }}>Quick Demo</p>
+        <p
+          style={{
+            fontSize: 11,
+            color: 'rgba(161,161,170,0.6)',
+            marginBottom: 8,
+            textTransform: 'uppercase',
+            letterSpacing: '0.08em',
+            fontWeight: 500,
+          }}
+        >
+          Quick Demo
+        </p>
         <div style={{ display: 'flex', gap: 8 }}>
           {DEMO_ACCOUNTS.map((account) => (
             <button
@@ -123,15 +153,15 @@ function LoginForm() {
                 cursor: 'pointer',
                 transition: 'all 200ms ease',
               }}
-              onMouseEnter={e => {
-                e.currentTarget.style.background = 'rgba(255,255,255,0.1)'
-                e.currentTarget.style.borderColor = 'rgba(139,92,246,0.5)'
-                e.currentTarget.style.color = 'white'
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
+                e.currentTarget.style.borderColor = 'rgba(139,92,246,0.5)';
+                e.currentTarget.style.color = 'white';
               }}
-              onMouseLeave={e => {
-                e.currentTarget.style.background = 'rgba(255,255,255,0.05)'
-                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'
-                e.currentTarget.style.color = 'rgba(212,212,216,1)'
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
+                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
+                e.currentTarget.style.color = 'rgba(212,212,216,1)';
               }}
             >
               {account.label}
@@ -141,26 +171,39 @@ function LoginForm() {
       </div>
 
       {/* Divider */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          marginBottom: 20,
+          paddingTop: 16,
+          borderTop: '1px solid rgba(255,255,255,0.1)',
+        }}
+      >
         <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.1)' }} />
-        <span style={{ fontSize: 12, color: 'rgba(161,161,170,0.6)', whiteSpace: 'nowrap' }}>or continue with email</span>
+        <span style={{ fontSize: 12, color: 'rgba(161,161,170,0.6)', whiteSpace: 'nowrap' }}>
+          or continue with email
+        </span>
         <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.1)' }} />
       </div>
 
       {/* Error */}
       {error && (
-        <div style={{
-          marginBottom: 16,
-          display: 'flex',
-          alignItems: 'flex-start',
-          gap: 8,
-          background: 'rgba(239,68,68,0.1)',
-          border: '1px solid rgba(239,68,68,0.2)',
-          color: 'rgba(248,113,113,1)',
-          fontSize: 14,
-          padding: '12px 16px',
-          borderRadius: 8,
-        }}>
+        <div
+          style={{
+            marginBottom: 16,
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: 8,
+            background: 'rgba(239,68,68,0.1)',
+            border: '1px solid rgba(239,68,68,0.2)',
+            color: 'rgba(248,113,113,1)',
+            fontSize: 14,
+            padding: '12px 16px',
+            borderRadius: 8,
+          }}
+        >
           <AlertCircle style={{ width: 16, height: 16, marginTop: 2, flexShrink: 0 }} />
           <span>{error}</span>
         </div>
@@ -169,7 +212,16 @@ function LoginForm() {
       {/* Form */}
       <form onSubmit={handleSubmit}>
         <div style={{ marginBottom: 16 }}>
-          <label htmlFor="email" style={{ display: 'block', fontSize: 14, fontWeight: 500, color: 'rgba(212,212,216,1)', marginBottom: 6 }}>
+          <label
+            htmlFor="email"
+            style={{
+              display: 'block',
+              fontSize: 14,
+              fontWeight: 500,
+              color: 'rgba(212,212,216,1)',
+              marginBottom: 6,
+            }}
+          >
             Email
           </label>
           <input
@@ -181,20 +233,30 @@ function LoginForm() {
             required
             placeholder="sarah@urbansole.com"
             style={inputStyle}
-            onFocus={e => {
-              e.currentTarget.style.borderColor = 'rgba(139,92,246,0.5)'
-              e.currentTarget.style.boxShadow = '0 0 0 2px rgba(139,92,246,0.15)'
+            onFocus={(e) => {
+              e.currentTarget.style.borderColor = 'rgba(139,92,246,0.5)';
+              e.currentTarget.style.boxShadow = '0 0 0 2px rgba(139,92,246,0.15)';
             }}
-            onBlur={e => {
-              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'
-              e.currentTarget.style.boxShadow = 'none'
+            onBlur={(e) => {
+              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
+              e.currentTarget.style.boxShadow = 'none';
             }}
           />
         </div>
 
         <div style={{ marginBottom: 8 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-            <label htmlFor="password" style={{ fontSize: 14, fontWeight: 500, color: 'rgba(212,212,216,1)' }}>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: 6,
+            }}
+          >
+            <label
+              htmlFor="password"
+              style={{ fontSize: 14, fontWeight: 500, color: 'rgba(212,212,216,1)' }}
+            >
               Password
             </label>
             <Link
@@ -214,13 +276,13 @@ function LoginForm() {
               required
               placeholder="••••••••••"
               style={{ ...inputStyle, paddingRight: 40 }}
-              onFocus={e => {
-                e.currentTarget.style.borderColor = 'rgba(139,92,246,0.5)'
-                e.currentTarget.style.boxShadow = '0 0 0 2px rgba(139,92,246,0.15)'
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = 'rgba(139,92,246,0.5)';
+                e.currentTarget.style.boxShadow = '0 0 0 2px rgba(139,92,246,0.15)';
               }}
-              onBlur={e => {
-                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'
-                e.currentTarget.style.boxShadow = 'none'
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
+                e.currentTarget.style.boxShadow = 'none';
               }}
             />
             <button
@@ -238,7 +300,11 @@ function LoginForm() {
                 padding: 0,
               }}
             >
-              {showPassword ? <EyeOff style={{ width: 16, height: 16 }} /> : <Eye style={{ width: 16, height: 16 }} />}
+              {showPassword ? (
+                <EyeOff style={{ width: 16, height: 16 }} />
+              ) : (
+                <Eye style={{ width: 16, height: 16 }} />
+              )}
             </button>
           </div>
         </div>
@@ -263,13 +329,13 @@ function LoginForm() {
             gap: 8,
             transition: 'all 200ms ease',
           }}
-          onMouseEnter={e => {
+          onMouseEnter={(e) => {
             if (!loading) {
-              e.currentTarget.style.background = 'linear-gradient(135deg, #8b5cf6, #6366f1)'
+              e.currentTarget.style.background = 'linear-gradient(135deg, #8b5cf6, #6366f1)';
             }
           }}
-          onMouseLeave={e => {
-            e.currentTarget.style.background = 'linear-gradient(135deg, #7c3aed, #4f46e5)'
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'linear-gradient(135deg, #7c3aed, #4f46e5)';
           }}
         >
           {loading ? (
@@ -285,33 +351,59 @@ function LoginForm() {
 
       {oauthProviders.length > 0 && (
         <>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 20, marginBottom: 4 }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              marginTop: 20,
+              marginBottom: 4,
+            }}
+          >
             <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.1)' }} />
-            <span style={{ fontSize: 12, color: 'rgba(161,161,170,0.6)', whiteSpace: 'nowrap' }}>or continue with</span>
+            <span style={{ fontSize: 12, color: 'rgba(161,161,170,0.6)', whiteSpace: 'nowrap' }}>
+              or continue with
+            </span>
             <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.1)' }} />
           </div>
           <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-            {oauthProviders.map(provider => (
+            {oauthProviders.map((provider) => (
               <button
                 key={provider}
                 type="button"
                 onClick={async () => {
-                  setError(null)
-                  setLoading(true)
-                  const res = await signIn(provider, { redirect: false })
-                  setLoading(false)
-                  if (res?.error) setError(res.error)
-                  else if (res?.url) window.location.href = res.url
+                  setError(null);
+                  setLoading(true);
+                  const res = await signIn(provider, { redirect: false });
+                  setLoading(false);
+                  if (res?.error) setError(res.error);
+                  else if (res?.url) window.location.href = res.url;
                 }}
                 style={{
-                  flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                  padding: '8px 12px', borderRadius: 8, fontSize: 13, fontWeight: 500, cursor: 'pointer',
-                  background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-                  color: 'rgba(212,212,216,1)', transition: 'all 200ms ease',
+                  flex: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                  padding: '8px 12px',
+                  borderRadius: 8,
+                  fontSize: 13,
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  background: 'rgba(255,255,255,0.05)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  color: 'rgba(212,212,216,1)',
+                  transition: 'all 200ms ease',
                   textTransform: 'capitalize',
                 }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'white' }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = 'rgba(212,212,216,1)' }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
+                  e.currentTarget.style.color = 'white';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
+                  e.currentTarget.style.color = 'rgba(212,212,216,1)';
+                }}
               >
                 {provider}
               </button>
@@ -320,7 +412,9 @@ function LoginForm() {
         </>
       )}
 
-      <p style={{ marginTop: 20, textAlign: 'center', fontSize: 14, color: 'rgba(161,161,170,0.6)' }}>
+      <p
+        style={{ marginTop: 20, textAlign: 'center', fontSize: 14, color: 'rgba(161,161,170,0.6)' }}
+      >
         Don&apos;t have an account?{' '}
         <Link
           href="/auth/signup"
@@ -330,70 +424,135 @@ function LoginForm() {
         </Link>
       </p>
     </div>
-  )
+  );
 }
 
 export default function LoginPage() {
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: '#0a0a0a',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: 16,
-      position: 'relative',
-      overflow: 'hidden',
-    }}>
+    <div
+      style={{
+        minHeight: '100vh',
+        background: '#0a0a0a',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 16,
+        position: 'relative',
+        overflow: 'hidden',
+      }}
+    >
       {/* Background gradient orbs */}
       <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
-        <div style={{ position: 'absolute', top: -160, right: -160, width: 320, height: 320, background: 'rgba(139,92,246,0.2)', borderRadius: '50%', filter: 'blur(96px)' }} />
-        <div style={{ position: 'absolute', bottom: -160, left: -160, width: 320, height: 320, background: 'rgba(79,70,229,0.2)', borderRadius: '50%', filter: 'blur(96px)' }} />
-        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 384, height: 384, background: 'rgba(88,28,135,0.1)', borderRadius: '50%', filter: 'blur(96px)' }} />
+        <div
+          style={{
+            position: 'absolute',
+            top: -160,
+            right: -160,
+            width: 320,
+            height: 320,
+            background: 'rgba(139,92,246,0.2)',
+            borderRadius: '50%',
+            filter: 'blur(96px)',
+          }}
+        />
+        <div
+          style={{
+            position: 'absolute',
+            bottom: -160,
+            left: -160,
+            width: 320,
+            height: 320,
+            background: 'rgba(79,70,229,0.2)',
+            borderRadius: '50%',
+            filter: 'blur(96px)',
+          }}
+        />
+        <div
+          style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: 384,
+            height: 384,
+            background: 'rgba(88,28,135,0.1)',
+            borderRadius: '50%',
+            filter: 'blur(96px)',
+          }}
+        />
       </div>
 
       <div style={{ width: '100%', maxWidth: 448, position: 'relative', zIndex: 1 }}>
         {/* Logo */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 32 }}>
-          <div style={{
-            width: 40, height: 40,
-            background: 'linear-gradient(135deg, #8b5cf6, #4f46e5)',
-            borderRadius: 12,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 10px 15px -3px rgba(139,92,246,0.25)',
-          }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 12,
+            marginBottom: 32,
+          }}
+        >
+          <div
+            style={{
+              width: 40,
+              height: 40,
+              background: 'linear-gradient(135deg, #8b5cf6, #4f46e5)',
+              borderRadius: 12,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 10px 15px -3px rgba(139,92,246,0.25)',
+            }}
+          >
             <Package style={{ width: 20, height: 20, color: 'white' }} />
           </div>
-          <span style={{ fontSize: 24, fontWeight: 700, color: 'white', letterSpacing: '-0.01em' }}>StockPilot</span>
+          <span style={{ fontSize: 24, fontWeight: 700, color: 'white', letterSpacing: '-0.01em' }}>
+            StockPilot
+          </span>
         </div>
 
         {/* Suspense Wrapper */}
         <Suspense
           fallback={
-            <div style={{
-              background: 'rgba(255,255,255,0.05)',
-              backdropFilter: 'blur(24px)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: 16,
-              padding: 32,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              minHeight: 300,
-            }}>
-              <Loader2 style={{ width: 32, height: 32, animation: 'spin 1s linear infinite', color: '#8b5cf6', marginBottom: 16 }} />
-              <p style={{ color: 'rgba(161,161,170,1)', fontSize: 14 }}>Loading login terminal...</p>
+            <div
+              style={{
+                background: 'rgba(255,255,255,0.05)',
+                backdropFilter: 'blur(24px)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: 16,
+                padding: 32,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minHeight: 300,
+              }}
+            >
+              <Loader2
+                style={{
+                  width: 32,
+                  height: 32,
+                  animation: 'spin 1s linear infinite',
+                  color: '#8b5cf6',
+                  marginBottom: 16,
+                }}
+              />
+              <p style={{ color: 'rgba(161,161,170,1)', fontSize: 14 }}>
+                Loading login terminal...
+              </p>
             </div>
           }
         >
           <LoginForm />
         </Suspense>
 
-        <p style={{ marginTop: 24, textAlign: 'center', fontSize: 12, color: 'rgba(113,113,122,1)' }}>
+        <p
+          style={{ marginTop: 24, textAlign: 'center', fontSize: 12, color: 'rgba(113,113,122,1)' }}
+        >
           StockPilot — Multi-warehouse inventory control
         </p>
       </div>
     </div>
-  )
+  );
 }

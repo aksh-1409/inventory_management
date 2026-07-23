@@ -1,4 +1,4 @@
-import { z } from 'zod'
+import { z } from 'zod';
 
 export const receiveSchema = z.object({
   productId: z.string().min(1),
@@ -7,4 +7,4 @@ export const receiveSchema = z.object({
   quantity: z.number().int().positive(),
   unitCost: z.number().positive().optional(),
   notes: z.string().optional(),
-})
+});

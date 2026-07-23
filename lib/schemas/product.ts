@@ -1,4 +1,4 @@
-import { z } from 'zod'
+import { z } from 'zod';
 
 export const productSchema = z.object({
   sku: z.string().min(1, 'SKU is required'),
@@ -8,7 +8,7 @@ export const productSchema = z.object({
   costPrice: z.number().positive().nullable().optional(),
   reorderPoint: z.number().int().min(0).default(5),
   category: z.string().nullable().optional(),
-})
+});
 
 export const productUpdateSchema = z.object({
   sku: z.string().min(1).optional(),
@@ -18,4 +18,4 @@ export const productUpdateSchema = z.object({
   costPrice: z.number().positive().optional().nullable(),
   reorderPoint: z.number().int().min(0).optional(),
   category: z.string().optional().nullable(),
-})
+});

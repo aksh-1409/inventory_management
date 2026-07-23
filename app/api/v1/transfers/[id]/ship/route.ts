@@ -1,43 +1,46 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import { requireAuth, hasScope } from '@/lib/api-auth'
-import { transferShipSchema } from '@/lib/schemas'
-import { auditLog } from '@/lib/audit'
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { requireAuth, hasScope } from '@/lib/api-auth';
+import { transferShipSchema } from '@/lib/schemas';
+import { auditLog } from '@/lib/audit';
 
-export async function POST(
-  req: NextRequest,
-  ctx: { params: Promise<{ id: string }> }
-) {
+export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   try {
-    const authResult = await requireAuth(req)
+    const authResult = await requireAuth(req);
     if (!authResult) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    const { user } = authResult
+    const { user } = authResult;
 
     if (!hasScope(user, 'transfers:write')) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const { id } = await ctx.params
-    const body = await req.json()
-    const result = transferShipSchema.safeParse(body)
+    const { id } = await ctx.params;
+    const body = await req.json();
+    const result = transferShipSchema.safeParse(body);
     if (!result.success) {
-      return NextResponse.json({ error: result.error.issues[0].message }, { status: 400 })
+      return NextResponse.json({ error: result.error.issues[0].message }, { status: 400 });
     }
 
-    const existing = await prisma.transfer.findUnique({ where: { id } })
+    const existing = await prisma.transfer.findUnique({ where: { id } });
     if (!existing) {
-      return NextResponse.json({ error: 'Transfer not found' }, { status: 404 })
+      return NextResponse.json({ error: 'Transfer not found' }, { status: 404 });
     }
 
     // Only source warehouse (or admin) can ship
     if (user.role === 'OPERATOR' && user.warehouseId !== existing.fromWarehouseId) {
-      return NextResponse.json({ error: 'Only the source warehouse can ship this transfer' }, { status: 403 })
+      return NextResponse.json(
+        { error: 'Only the source warehouse can ship this transfer' },
+        { status: 403 }
+      );
     }
 
     if (existing.status !== 'PENDING') {
-      return NextResponse.json({ error: `Cannot ship transfer in ${existing.status} status` }, { status: 409 })
+      return NextResponse.json(
+        { error: `Cannot ship transfer in ${existing.status} status` },
+        { status: 409 }
+      );
     }
 
     const transfer = await prisma.transfer.update({
@@ -52,12 +55,12 @@ export async function POST(
         fromWarehouse: true,
         toWarehouse: true,
       },
-    })
-    await auditLog(user.id, 'Transfer', id, 'UPDATE', { after: 'shipped' })
+    });
+    await auditLog(user.id, 'Transfer', id, 'UPDATE', { after: 'shipped' });
 
-    return NextResponse.json({ transfer })
+    return NextResponse.json({ transfer });
   } catch (error) {
-    console.error('[TRANSFER_SHIP_ERROR]', error)
-    return NextResponse.json({ error: 'Internal server error.' }, { status: 500 })
+    console.error('[TRANSFER_SHIP_ERROR]', error);
+    return NextResponse.json({ error: 'Internal server error.' }, { status: 500 });
   }
 }

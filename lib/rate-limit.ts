@@ -10,97 +10,100 @@
  */
 
 interface RateLimitEntry {
-  count: number
-  resetAt: number
-  windowMs: number
+  count: number;
+  resetAt: number;
+  windowMs: number;
 }
 
-const store = new Map<string, RateLimitEntry>()
+const store = new Map<string, RateLimitEntry>();
 
-const BASE_MAX = 5
-const BASE_WINDOW_MS = 15 * 60 * 1000
+const BASE_MAX = 5;
+const BASE_WINDOW_MS = 15 * 60 * 1000;
 
-const WINDOW_MULTIPLIER = 2
-const MAX_WINDOW_MS = 4 * 60 * 60 * 1000 // 4 hours cap
+const WINDOW_MULTIPLIER = 2;
+const MAX_WINDOW_MS = 4 * 60 * 60 * 1000; // 4 hours cap
 
 export interface RateLimitResult {
-  success: boolean
-  retryAfterMs?: number
-  remaining?: number
+  success: boolean;
+  retryAfterMs?: number;
+  remaining?: number;
 }
 
 function activeEntry(key: string): RateLimitEntry | undefined {
-  const now = Date.now()
-  const entry = store.get(key)
+  const now = Date.now();
+  const entry = store.get(key);
 
   if (entry && now >= entry.resetAt) {
-    store.delete(key)
-    return undefined
+    store.delete(key);
+    return undefined;
   }
 
-  return entry
+  return entry;
 }
 
 export function getRateLimitStatus(key: string): RateLimitResult {
-  const entry = activeEntry(key)
-  if (!entry) return { success: true, remaining: BASE_MAX }
+  const entry = activeEntry(key);
+  if (!entry) return { success: true, remaining: BASE_MAX };
 
   if (entry.count >= BASE_MAX) {
-    return { success: false, retryAfterMs: entry.resetAt - Date.now() }
+    return { success: false, retryAfterMs: entry.resetAt - Date.now() };
   }
 
-  return { success: true, remaining: BASE_MAX - entry.count }
+  return { success: true, remaining: BASE_MAX - entry.count };
 }
 
 export function recordFailedAttempt(key: string): RateLimitResult {
-  const now = Date.now()
-  const entry = activeEntry(key)
+  const now = Date.now();
+  const entry = activeEntry(key);
 
   if (!entry) {
-    store.set(key, { count: 1, resetAt: now + BASE_WINDOW_MS, windowMs: BASE_WINDOW_MS })
-    return { success: true, remaining: BASE_MAX - 1 }
+    store.set(key, { count: 1, resetAt: now + BASE_WINDOW_MS, windowMs: BASE_WINDOW_MS });
+    return { success: true, remaining: BASE_MAX - 1 };
   }
 
-  entry.count += 1
+  entry.count += 1;
 
   if (entry.count >= BASE_MAX) {
     return {
       success: false,
       retryAfterMs: entry.resetAt - now,
-    }
+    };
   }
 
-  return { success: true, remaining: BASE_MAX - entry.count }
+  return { success: true, remaining: BASE_MAX - entry.count };
 }
 
 // Generic endpoint limiter: each request counts as an attempt.
 export function checkRateLimit(key: string): RateLimitResult {
-  const status = getRateLimitStatus(key)
-  if (!status.success) return status
-  const recorded = recordFailedAttempt(key)
-  return { success: true, remaining: recorded.remaining ?? 0 }
+  const status = getRateLimitStatus(key);
+  if (!status.success) return status;
+  const recorded = recordFailedAttempt(key);
+  return { success: true, remaining: recorded.remaining ?? 0 };
 }
 
-export function checkRateLimitPair(ipKey: string, accountKey: string): {
-  success: boolean
-  retryAfterMs?: number
-  remaining?: number
+export function checkRateLimitPair(
+  ipKey: string,
+  accountKey: string
+): {
+  success: boolean;
+  retryAfterMs?: number;
+  remaining?: number;
 } {
-  const ipResult = checkRateLimit(ipKey)
-  if (!ipResult.success) return ipResult
+  const ipResult = checkRateLimit(ipKey);
+  if (!ipResult.success) return ipResult;
 
-  return checkRateLimit(accountKey)
+  return checkRateLimit(accountKey);
 }
 
 export function resetRateLimit(key: string): void {
-  store.delete(key)
+  store.delete(key);
 }
 
 export function cleanupRateLimit(): void {
-  const now = Date.now()
+  const now = Date.now();
   for (const [key, entry] of store.entries()) {
     if (now >= entry.resetAt) {
-      store.delete(key)
+      store.delete(key);
     }
   }
 }

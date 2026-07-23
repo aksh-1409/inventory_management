@@ -1,9 +1,9 @@
-'use client'
+'use client';
 
-import { signOut, useSession } from 'next-auth/react'
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { useState } from 'react'
+import { signOut, useSession } from 'next-auth/react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { useState } from 'react';
 import {
   Package,
   Warehouse,
@@ -22,13 +22,13 @@ import {
   Receipt,
   UserCircle,
   Shield,
-} from 'lucide-react'
+} from 'lucide-react';
 
 interface NavItem {
-  label: string
-  href: string
-  icon: React.ElementType
-  adminOnly?: boolean
+  label: string;
+  href: string;
+  icon: React.ElementType;
+  adminOnly?: boolean;
 }
 
 const NAV_ITEMS: NavItem[] = [
@@ -45,22 +45,21 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'API Keys', href: '/dashboard/api-keys', icon: Key, adminOnly: true },
   { label: 'Audit Log', href: '/dashboard/audit-log', icon: Shield, adminOnly: true },
   { label: 'Settings', href: '/dashboard/settings', icon: Settings, adminOnly: true },
-]
+];
 
 export default function Sidebar() {
-  const { data: session } = useSession()
-  const pathname = usePathname()
-  const [mobileOpen, setMobileOpen] = useState(false)
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
+  const { data: session } = useSession();
+  const pathname = usePathname();
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
-  const isAdmin = session?.user?.role === 'ADMIN'
-  const filteredItems = NAV_ITEMS.filter((item) => !item.adminOnly || isAdmin)
+  const isAdmin = session?.user?.role === 'ADMIN';
+  const filteredItems = NAV_ITEMS.filter((item) => !item.adminOnly || isAdmin);
 
   function NavLink({ item }: { item: NavItem }) {
     const isActive =
-      pathname === item.href ||
-      (item.href !== '/dashboard' && pathname.startsWith(item.href))
-    const Icon = item.icon
+      pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
+    const Icon = item.icon;
 
     return (
       <Link
@@ -81,16 +80,16 @@ export default function Sidebar() {
           background: isActive ? 'rgba(255,255,255,0.08)' : 'transparent',
           color: isActive ? '#FCFDFF' : 'rgba(252,253,255,0.70)',
         }}
-        onMouseEnter={e => {
+        onMouseEnter={(e) => {
           if (!isActive) {
-            (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(255,255,255,0.04)'
-            ;(e.currentTarget as HTMLAnchorElement).style.color = '#FCFDFF'
+            (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(255,255,255,0.04)';
+            (e.currentTarget as HTMLAnchorElement).style.color = '#FCFDFF';
           }
         }}
-        onMouseLeave={e => {
+        onMouseLeave={(e) => {
           if (!isActive) {
-            (e.currentTarget as HTMLAnchorElement).style.background = 'transparent'
-            ;(e.currentTarget as HTMLAnchorElement).style.color = 'rgba(252,253,255,0.70)'
+            (e.currentTarget as HTMLAnchorElement).style.background = 'transparent';
+            (e.currentTarget as HTMLAnchorElement).style.color = 'rgba(252,253,255,0.70)';
           }
         }}
       >
@@ -104,28 +103,35 @@ export default function Sidebar() {
         />
         <span>{item.label}</span>
       </Link>
-    )
+    );
   }
 
   const SidebarContent = () => (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* Logo */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 8,
-        padding: '0 24px',
-        height: 64,
-        flexShrink: 0,
-        borderBottom: '1px solid var(--border)',
-      }}>
-        <div style={{
-          width: 32, height: 32,
-          border: '1px solid var(--border)',
-          borderRadius: 8,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          padding: '0 24px',
+          height: 64,
           flexShrink: 0,
-        }}>
+          borderBottom: '1px solid var(--border)',
+        }}
+      >
+        <div
+          style={{
+            width: 32,
+            height: 32,
+            border: '1px solid var(--border)',
+            borderRadius: 8,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+          }}
+        >
           <Package style={{ width: 14, height: 14, color: 'white' }} />
         </div>
         <span style={{ fontSize: 16, fontWeight: 600, color: 'white', letterSpacing: '-0.01em' }}>
@@ -134,42 +140,71 @@ export default function Sidebar() {
       </div>
 
       {/* Nav */}
-      <nav style={{ flex: 1, padding: '16px 8px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <nav
+        style={{
+          flex: 1,
+          padding: '16px 8px',
+          overflowY: 'auto',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 4,
+        }}
+      >
         {filteredItems.map((item) => (
           <NavLink key={item.href} item={item} />
         ))}
       </nav>
 
       {/* User Footer */}
-      <div style={{
-        padding: '12px 12px',
-        borderTop: '1px solid var(--border)',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 8,
-      }}>
+      <div
+        style={{
+          padding: '12px 12px',
+          borderTop: '1px solid var(--border)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+        }}
+      >
         <Link
           href="/dashboard/profile"
           style={{
-            width: 32, height: 32,
+            width: 32,
+            height: 32,
             borderRadius: '50%',
             background: 'rgba(255,255,255,0.1)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 12, fontWeight: 600, color: 'white',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 12,
+            fontWeight: 600,
+            color: 'white',
             flexShrink: 0,
             textDecoration: 'none',
           }}
         >
           {session?.user?.name?.charAt(0)?.toUpperCase() || '?'}
         </Link>
-        <Link
-          href="/dashboard/profile"
-          style={{ flex: 1, minWidth: 0, textDecoration: 'none' }}
-        >
-          <p style={{ fontSize: 14, color: '#FCFDFF', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <Link href="/dashboard/profile" style={{ flex: 1, minWidth: 0, textDecoration: 'none' }}>
+          <p
+            style={{
+              fontSize: 14,
+              color: '#FCFDFF',
+              fontWeight: 500,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
             {session?.user?.name}
           </p>
-          <p style={{ fontSize: 12, color: 'rgba(252,253,255,0.50)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          <p
+            style={{
+              fontSize: 12,
+              color: 'rgba(252,253,255,0.50)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+            }}
+          >
             {session?.user?.warehouseName
               ? `${session.user.warehouseName} · ${session.user.role}`
               : session?.user?.role}
@@ -179,31 +214,36 @@ export default function Sidebar() {
           onClick={() => setShowLogoutConfirm(true)}
           title="Sign out"
           style={{
-            width: 32, height: 32,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: 'none', border: 'none', cursor: 'pointer',
+            width: 32,
+            height: 32,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
             color: 'rgba(252,253,255,0.50)',
             borderRadius: 8,
             flexShrink: 0,
             transition: 'color 150ms ease',
           }}
-          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--danger)' }}
-          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = 'rgba(252,253,255,0.50)' }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.color = 'var(--danger)';
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.color = 'rgba(252,253,255,0.50)';
+          }}
         >
           <LogOut style={{ width: 16, height: 16 }} />
         </button>
       </div>
     </div>
-  )
+  );
 
   return (
     <>
       {/* Hamburger: CSS hides on lg+ */}
-      <button
-        className="hamburger-btn"
-        onClick={() => setMobileOpen(true)}
-        aria-label="Open menu"
-      >
+      <button className="hamburger-btn" onClick={() => setMobileOpen(true)} aria-label="Open menu">
         <Menu style={{ width: 16, height: 16 }} />
       </button>
 
@@ -214,7 +254,9 @@ export default function Sidebar() {
           <div
             onClick={() => setMobileOpen(false)}
             style={{
-              position: 'fixed', inset: 0, zIndex: 40,
+              position: 'fixed',
+              inset: 0,
+              zIndex: 40,
               background: 'rgba(0,0,0,0.65)',
             }}
           />
@@ -224,7 +266,9 @@ export default function Sidebar() {
         <div
           style={{
             position: 'fixed',
-            top: 0, left: 0, bottom: 0,
+            top: 0,
+            left: 0,
+            bottom: 0,
             width: 260,
             zIndex: 50,
             background: 'var(--bg-surface-1)',
@@ -237,15 +281,28 @@ export default function Sidebar() {
             onClick={() => setMobileOpen(false)}
             aria-label="Close menu"
             style={{
-              position: 'absolute', top: 14, right: 14, zIndex: 10,
-              width: 32, height: 32,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: 'rgba(255,255,255,0.06)', border: 'none', cursor: 'pointer',
-              color: 'rgba(252,253,255,0.60)', borderRadius: 8,
+              position: 'absolute',
+              top: 14,
+              right: 14,
+              zIndex: 10,
+              width: 32,
+              height: 32,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'rgba(255,255,255,0.06)',
+              border: 'none',
+              cursor: 'pointer',
+              color: 'rgba(252,253,255,0.60)',
+              borderRadius: 8,
               transition: 'color 150ms ease',
             }}
-            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = 'white' }}
-            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = 'rgba(252,253,255,0.60)' }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.color = 'white';
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.color = 'rgba(252,253,255,0.60)';
+            }}
           >
             <X style={{ width: 16, height: 16 }} />
           </button>
@@ -264,28 +321,49 @@ export default function Sidebar() {
           <div
             onClick={() => setShowLogoutConfirm(false)}
             style={{
-              position: 'fixed', inset: 0, zIndex: 100,
+              position: 'fixed',
+              inset: 0,
+              zIndex: 100,
               background: 'rgba(0,0,0,0.5)',
             }}
           />
-          <div style={{
-            position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-            zIndex: 101, background: '#1a1a1a', borderRadius: 12, padding: 24,
-            border: '1px solid rgba(255,255,255,0.1)', minWidth: 280, maxWidth: 360,
-          }}>
-            <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: 'white', marginBottom: 8 }}>
+          <div
+            style={{
+              position: 'fixed',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              zIndex: 101,
+              background: '#1a1a1a',
+              borderRadius: 12,
+              padding: 24,
+              border: '1px solid rgba(255,255,255,0.1)',
+              minWidth: 280,
+              maxWidth: 360,
+            }}
+          >
+            <p
+              style={{ margin: 0, fontSize: 15, fontWeight: 600, color: 'white', marginBottom: 8 }}
+            >
               Sign out
             </p>
-            <p style={{ margin: 0, fontSize: 13, color: 'rgba(161,161,170,0.8)', marginBottom: 20 }}>
+            <p
+              style={{ margin: 0, fontSize: 13, color: 'rgba(161,161,170,0.8)', marginBottom: 20 }}
+            >
               Are you sure you want to sign out?
             </p>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
               <button
                 onClick={() => setShowLogoutConfirm(false)}
                 style={{
-                  padding: '6px 14px', borderRadius: 8, fontSize: 13, fontWeight: 500,
-                  background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
-                  color: 'rgba(212,212,216,1)', cursor: 'pointer',
+                  padding: '6px 14px',
+                  borderRadius: 8,
+                  fontSize: 13,
+                  fontWeight: 500,
+                  background: 'rgba(255,255,255,0.06)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  color: 'rgba(212,212,216,1)',
+                  cursor: 'pointer',
                 }}
               >
                 Cancel
@@ -293,9 +371,14 @@ export default function Sidebar() {
               <button
                 onClick={() => signOut({ callbackUrl: '/auth/login' })}
                 style={{
-                  padding: '6px 14px', borderRadius: 8, fontSize: 13, fontWeight: 500,
-                  background: 'var(--danger)', border: 'none',
-                  color: 'white', cursor: 'pointer',
+                  padding: '6px 14px',
+                  borderRadius: 8,
+                  fontSize: 13,
+                  fontWeight: 500,
+                  background: 'var(--danger)',
+                  border: 'none',
+                  color: 'white',
+                  cursor: 'pointer',
                 }}
               >
                 Sign out
@@ -305,5 +388,5 @@ export default function Sidebar() {
         </>
       )}
     </>
-  )
+  );
 }

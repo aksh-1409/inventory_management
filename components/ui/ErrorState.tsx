@@ -1,9 +1,9 @@
-import { AlertTriangle, RefreshCcw } from 'lucide-react'
+import { AlertTriangle, RefreshCcw } from 'lucide-react';
 
 interface Props {
-  title?: string
-  message: string
-  onRetry?: () => void
+  title?: string;
+  message: string;
+  onRetry?: () => void;
 }
 
 export function ErrorState({ title = 'Something went wrong', message, onRetry }: Props) {
@@ -13,9 +13,7 @@ export function ErrorState({ title = 'Something went wrong', message, onRetry }:
         <AlertTriangle className="w-6 h-6 text-[var(--danger)]" />
       </div>
       <h3 className="text-lg font-medium text-[var(--text-heading)] mb-1">{title}</h3>
-      <p className="text-sm text-[var(--text-secondary)] mb-6 max-w-sm">
-        {message}
-      </p>
+      <p className="text-sm text-[var(--text-secondary)] mb-6 max-w-sm">{message}</p>
       {onRetry && (
         <button onClick={onRetry} className="btn btn-ghost border border-[var(--border)]">
           <RefreshCcw className="w-4 h-4" />
@@ -23,5 +21,5 @@ export function ErrorState({ title = 'Something went wrong', message, onRetry }:
         </button>
       )}
     </div>
-  )
+  );
 }

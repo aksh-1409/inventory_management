@@ -1,12 +1,12 @@
-'use client'
+'use client';
 
-import { Loader2 } from 'lucide-react'
+import { Loader2 } from 'lucide-react';
 
 interface Props {
-  totalCount: number
-  hasMore: boolean
-  loading: boolean
-  onLoadMore: () => void
+  totalCount: number;
+  hasMore: boolean;
+  loading: boolean;
+  onLoadMore: () => void;
 }
 
 export function CursorPagination({ totalCount, hasMore, loading, onLoadMore }: Props) {
@@ -24,5 +24,5 @@ export function CursorPagination({ totalCount, hasMore, loading, onLoadMore }: P
         </button>
       )}
     </div>
-  )
+  );
 }

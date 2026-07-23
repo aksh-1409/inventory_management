@@ -1,56 +1,58 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import { requireAuth, hasScope } from '@/lib/api-auth'
-import { auditLog } from '@/lib/audit'
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { requireAuth, hasScope } from '@/lib/api-auth';
+import { auditLog } from '@/lib/audit';
 
 export async function POST(req: NextRequest) {
   try {
-    const authResult = await requireAuth(req)
-    if (!authResult) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    const { user } = authResult
+    const authResult = await requireAuth(req);
+    if (!authResult) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { user } = authResult;
     if (!hasScope(user, 'products:write') || user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const body = await req.json()
-    let ids: string[] = []
+    const body = await req.json();
+    let ids: string[] = [];
 
     if (body.allMatching && body.searchParams) {
-      const query = body.searchParams
+      const query = body.searchParams;
       const matching = await prisma.product.findMany({
         where: {
           deletedAt: null,
-          ...(query ? {
-            OR: [
-              { name: { contains: query, mode: 'insensitive' as const } },
-              { sku: { contains: query, mode: 'insensitive' as const } },
-              { category: { contains: query, mode: 'insensitive' as const } },
-            ],
-          } : {}),
+          ...(query
+            ? {
+                OR: [
+                  { name: { contains: query, mode: 'insensitive' as const } },
+                  { sku: { contains: query, mode: 'insensitive' as const } },
+                  { category: { contains: query, mode: 'insensitive' as const } },
+                ],
+              }
+            : {}),
         },
         select: { id: true },
-      })
-      ids = matching.map(p => p.id)
+      });
+      ids = matching.map((p) => p.id);
     } else if (Array.isArray(body.ids)) {
-      ids = body.ids
+      ids = body.ids;
     }
 
     if (ids.length === 0) {
-      return NextResponse.json({ error: 'No IDs provided' }, { status: 400 })
+      return NextResponse.json({ error: 'No IDs provided' }, { status: 400 });
     }
 
     const result = await prisma.product.updateMany({
       where: { id: { in: ids }, deletedAt: null },
       data: { deletedAt: new Date() },
-    })
+    });
 
     for (const id of ids) {
-      await auditLog(user.id, 'Product', id, 'DELETE')
+      await auditLog(user.id, 'Product', id, 'DELETE');
     }
 
-    return NextResponse.json({ deleted: result.count })
+    return NextResponse.json({ deleted: result.count });
   } catch (error) {
-    console.error('[PRODUCT_BULK_DELETE_ERROR]', error)
-    return NextResponse.json({ error: 'Internal server error.' }, { status: 500 })
+    console.error('[PRODUCT_BULK_DELETE_ERROR]', error);
+    return NextResponse.json({ error: 'Internal server error.' }, { status: 500 });
   }
 }
