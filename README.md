@@ -18,120 +18,120 @@ Open-source, self-hosted multi-warehouse inventory management system for retail 
 
 ### Public Pages
 
-| Landing Page | Features | Login | Signup |
-|:---:|:---:|:---:|:---:|
-| ![Landing](docs/screenshots/01-landing-hero.png) | ![Features](docs/screenshots/02-landing-features.png) | ![Login](docs/screenshots/03-login.png) | ![Signup](docs/screenshots/04-signup.png) |
+|                    Landing Page                     |                                                       Features                                                       |                                         Login                                          |                     Signup                     |
+| :-------------------------------------------------: | :------------------------------------------------------------------------------------------------------------------: | :------------------------------------------------------------------------------------: | :--------------------------------------------: |
+|  ![Landing](docs/screenshots/01-landing-hero.png)   |                                ![Features](docs/screenshots/02-landing-features.png)                                 |                        ![Login](docs/screenshots/03-login.png)                         |   ![Signup](docs/screenshots/04-signup.png)    |
 | Hero with "Open Source · Self-Hosted" badge and CTA | Six feature cards: Multi-Warehouse, Transfer Workflow, Dashboard & Reports, Role-Based Access, REST API, Self-Hosted | Quick demo buttons (Sarah Admin, Mike Operator), email/password, Google & GitHub OAuth | Operator registration with warehouse selection |
 
 ---
 
 ### Admin Dashboard (Sarah — Admin role)
 
-| Dashboard Overview | Stock Matrix | Recent Activity |
-|:---:|:---:|:---:|
-| ![Dashboard](docs/screenshots/05-admin-dashboard.png) | ![Stock Matrix](docs/screenshots/06-admin-products.png) | ![Recent Activity](docs/screenshots/05-admin-dashboard.png) |
-| KPIs: 5 products, 4 warehouses, 0 active transfers, 4 low stock alerts | Products × Warehouses grid with color-coded stock levels (red = critical, yellow = low, green = healthy) | IN/OUT/DAMAGE movement feed with quantity deltas |
+|                           Dashboard Overview                           |                                               Stock Matrix                                               |                       Recent Activity                       |
+| :--------------------------------------------------------------------: | :------------------------------------------------------------------------------------------------------: | :---------------------------------------------------------: |
+|         ![Dashboard](docs/screenshots/05-admin-dashboard.png)          |                         ![Stock Matrix](docs/screenshots/06-admin-products.png)                          | ![Recent Activity](docs/screenshots/05-admin-dashboard.png) |
+| KPIs: 5 products, 4 warehouses, 0 active transfers, 4 low stock alerts | Products × Warehouses grid with color-coded stock levels (red = critical, yellow = low, green = healthy) |      IN/OUT/DAMAGE movement feed with quantity deltas       |
 
 ---
 
 ### Product Management
 
-| Products List | Export Dropdown | Add Product |
-|:---:|:---:|:---:|
-| ![Products](docs/screenshots/06-admin-products.png) | ![Export](docs/screenshots/12-admin-export-dropdown.png) | ![Add Product](docs/screenshots/13-admin-add-product.png) |
-| Inventory matrix with per-warehouse stock, edit/delete actions, search, bulk select | CSV and PDF export options | SKU, Name, Description, Price, Cost, Reorder Point, Category |
+|                                    Products List                                    |                     Export Dropdown                      |                         Add Product                          |
+| :---------------------------------------------------------------------------------: | :------------------------------------------------------: | :----------------------------------------------------------: |
+|                 ![Products](docs/screenshots/06-admin-products.png)                 | ![Export](docs/screenshots/12-admin-export-dropdown.png) |  ![Add Product](docs/screenshots/13-admin-add-product.png)   |
+| Inventory matrix with per-warehouse stock, edit/delete actions, search, bulk select |                CSV and PDF export options                | SKU, Name, Description, Price, Cost, Reorder Point, Category |
 
-| Products Report (PDF) | CSV Export (Excel) |
-|:---:|:---:|
-| ![PDF Report](docs/screenshots/22-products-report-pdf.png) | ![CSV Export](docs/screenshots/24-csv-export-excel.png) |
-| Generated report with Name, SKU, Category, Price, Cost, Reorder | Spreadsheet export opened in Excel |
+|                      Products Report (PDF)                      |                   CSV Export (Excel)                    |
+| :-------------------------------------------------------------: | :-----------------------------------------------------: |
+|   ![PDF Report](docs/screenshots/22-products-report-pdf.png)    | ![CSV Export](docs/screenshots/24-csv-export-excel.png) |
+| Generated report with Name, SKU, Category, Price, Cost, Reorder |           Spreadsheet export opened in Excel            |
 
 ---
 
 ### Warehouse Management
 
-| Warehouses | Add Warehouse |
-|:---:|:---:|
-| ![Warehouses](docs/screenshots/07-admin-warehouses.png) | ![Add Warehouse](docs/screenshots/07-admin-warehouses.png) |
-| Card layout: Chicago Hub, LA Store, Las Vegas, NYC Flagship with stock breakdown per location | "+ Add Warehouse" button opens form for new location |
+|                                          Warehouses                                           |                       Add Warehouse                        |
+| :-------------------------------------------------------------------------------------------: | :--------------------------------------------------------: |
+|                    ![Warehouses](docs/screenshots/07-admin-warehouses.png)                    | ![Add Warehouse](docs/screenshots/07-admin-warehouses.png) |
+| Card layout: Chicago Hub, LA Store, Las Vegas, NYC Flagship with stock breakdown per location |    "+ Add Warehouse" button opens form for new location    |
 
 ---
 
 ### Transfer Workflow
 
-| Transfers (In Progress) | New Transfer Request |
-|:---:|:---:|
-| ![Transfers](docs/screenshots/08-admin-transfers.png) | ![New Transfer Request](docs/screenshots/08-admin-transfers.png) |
-| Completed transfers with Receiving Report download, tracking numbers | Product, Deliver to, Quantity, Notes |
+|                       Transfers (In Progress)                        |                       New Transfer Request                       |
+| :------------------------------------------------------------------: | :--------------------------------------------------------------: |
+|        ![Transfers](docs/screenshots/08-admin-transfers.png)         | ![New Transfer Request](docs/screenshots/08-admin-transfers.png) |
+| Completed transfers with Receiving Report download, tracking numbers |               Product, Deliver to, Quantity, Notes               |
 
 ---
 
 ### Inventory Tracking
 
-| Inventory (Admin View) | Color-Coded Status |
-|:---:|:---:|
-| ![Inventory](docs/screenshots/09-admin-inventory.png) | ![Color-Coded Status](docs/screenshots/09-admin-inventory.png) |
-| 15 items across all warehouses — CRITICAL (red), LOW (yellow), HEALTHY (green) status | Adjust button for manual stock corrections |
+|                                Inventory (Admin View)                                 |                       Color-Coded Status                       |
+| :-----------------------------------------------------------------------------------: | :------------------------------------------------------------: |
+|                 ![Inventory](docs/screenshots/09-admin-inventory.png)                 | ![Color-Coded Status](docs/screenshots/09-admin-inventory.png) |
+| 15 items across all warehouses — CRITICAL (red), LOW (yellow), HEALTHY (green) status |           Adjust button for manual stock corrections           |
 
 ---
 
 ### Sales & Receiving
 
-| Sales List | Record Sale | Receiving |
-|:---:|:---:|:---:|
-| ![Sales](docs/screenshots/10-admin-sales.png) | ![Record Sale](docs/screenshots/14-admin-record-sale.png) | ![Receiving](docs/screenshots/11-admin-receiving.png) |
+|                           Sales List                            |                              Record Sale                               |                         Receiving                         |
+| :-------------------------------------------------------------: | :--------------------------------------------------------------------: | :-------------------------------------------------------: |
+|          ![Sales](docs/screenshots/10-admin-sales.png)          |       ![Record Sale](docs/screenshots/14-admin-record-sale.png)        |   ![Receiving](docs/screenshots/11-admin-receiving.png)   |
 | Product, SKU, Warehouse, Qty, Date, Reference, Invoice download | Customer phone auto-lookup, product/warehouse select, quantity & price | 16 received shipments with Receiving Report PDF downloads |
 
-| Receiving Report (PDF) |
-|:---:|
-| ![Receiving Report](docs/screenshots/23-receiving-report-pdf.png) |
+|                                         Receiving Report (PDF)                                         |
+| :----------------------------------------------------------------------------------------------------: |
+|                   ![Receiving Report](docs/screenshots/23-receiving-report-pdf.png)                    |
 | Purchase order receipt: supplier, shipment details, line items, ordered vs received, damaged write-off |
 
 ---
 
 ### Customers & Suppliers
 
-| Customers | Suppliers |
-|:---:|:---:|
+|                       Customers                       |                       Suppliers                       |
+| :---------------------------------------------------: | :---------------------------------------------------: |
 | ![Customers](docs/screenshots/15-admin-customers.png) | ![Suppliers](docs/screenshots/16-admin-suppliers.png) |
-| Name, Phone, Email with search and bulk select | Contact cards with email and phone |
+|    Name, Phone, Email with search and bulk select     |          Contact cards with email and phone           |
 
 ---
 
 ### User Management & Access Control
 
-| Users | API Keys | Profile |
-|:---:|:---:|:---:|
-| ![Users](docs/screenshots/17-admin-users.png) | ![API Keys](docs/screenshots/18-admin-api-keys.png) | ![Profile](docs/screenshots/21-admin-profile.png) |
-| 14 users, password reset approvals, role/warehouse assignments, admin-only delete | Programmatic access tokens with scoped permissions (products:read, inventory:write, etc.) | Account info, role badge, change password |
+|                                       Users                                       |                                         API Keys                                          |                      Profile                      |
+| :-------------------------------------------------------------------------------: | :---------------------------------------------------------------------------------------: | :-----------------------------------------------: |
+|                   ![Users](docs/screenshots/17-admin-users.png)                   |                    ![API Keys](docs/screenshots/18-admin-api-keys.png)                    | ![Profile](docs/screenshots/21-admin-profile.png) |
+| 14 users, password reset approvals, role/warehouse assignments, admin-only delete | Programmatic access tokens with scoped permissions (products:read, inventory:write, etc.) |     Account info, role badge, change password     |
 
 ---
 
 ### Audit Log & Webhooks
 
-| Audit Log | Entity Filter | Action Filter | Webhooks |
-|:---:|:---:|:---:|:---:|
-| ![Audit Log](docs/screenshots/19-admin-audit-log.png) | ![Entity Filter](docs/screenshots/19-admin-audit-log.png) | ![Action Filter](docs/screenshots/19-admin-audit-log.png) | ![Webhooks](docs/screenshots/20-admin-webhooks.png) |
-| Immutable record of all system changes | Filter by Product, Warehouse, Customer, Supplier, WebhookSubscription, ApiKey | CREATE, UPDATE, DELETE, RESTORE | HTTP callbacks on inventory events (e.g., sale.created) |
+|                       Audit Log                       |                                 Entity Filter                                 |                       Action Filter                       |                        Webhooks                         |
+| :---------------------------------------------------: | :---------------------------------------------------------------------------: | :-------------------------------------------------------: | :-----------------------------------------------------: |
+| ![Audit Log](docs/screenshots/19-admin-audit-log.png) |           ![Entity Filter](docs/screenshots/19-admin-audit-log.png)           | ![Action Filter](docs/screenshots/19-admin-audit-log.png) |   ![Webhooks](docs/screenshots/20-admin-webhooks.png)   |
+|        Immutable record of all system changes         | Filter by Product, Warehouse, Customer, Supplier, WebhookSubscription, ApiKey |              CREATE, UPDATE, DELETE, RESTORE              | HTTP callbacks on inventory events (e.g., sale.created) |
 
 ---
 
 ### Operator View (Mike — Operator role, LA Store)
 
-| Login | Dashboard | Products (Read-Only) |
-|:---:|:---:|:---:|
+|                           Login                           |                             Dashboard                             |                      Products (Read-Only)                       |
+| :-------------------------------------------------------: | :---------------------------------------------------------------: | :-------------------------------------------------------------: |
 | ![Operator Login](docs/screenshots/25-operator-login.png) | ![Operator Dashboard](docs/screenshots/26-operator-dashboard.png) | ![Operator Products](docs/screenshots/27-operator-products.png) |
-| Mike (Operator) quick demo selected | Scoped to LA Store: 4 products, 1 warehouse, 0 alerts | Full product list with export only — no Add/Edit/Delete |
+|            Mike (Operator) quick demo selected            |       Scoped to LA Store: 4 products, 1 warehouse, 0 alerts       |     Full product list with export only — no Add/Edit/Delete     |
 
-| Transfers | Inventory (LA Store Only) | Sales |
-|:---:|:---:|:---:|
+|                             Transfers                             |                     Inventory (LA Store Only)                     |                           Sales                           |
+| :---------------------------------------------------------------: | :---------------------------------------------------------------: | :-------------------------------------------------------: |
 | ![Operator Transfers](docs/screenshots/28-operator-transfers.png) | ![Operator Inventory](docs/screenshots/29-operator-inventory.png) | ![Operator Sales](docs/screenshots/30-operator-sales.png) |
-| New request with "Deliver to: LA Store" pre-filled | 4 items scoped to LA Store, all LOW status | Record sale with customer phone lookup |
+|        New request with "Deliver to: LA Store" pre-filled         |            4 items scoped to LA Store, all LOW status             |          Record sale with customer phone lookup           |
 
-| Receiving |
-|:---:|
+|                             Receiving                             |
+| :---------------------------------------------------------------: |
 | ![Operator Receiving](docs/screenshots/31-operator-receiving.png) |
-| 4 received shipments with Receiving Report PDF downloads |
+|     4 received shipments with Receiving Report PDF downloads      |
 
 ## Tech Stack
 
@@ -200,8 +200,8 @@ Open [http://localhost:3000](http://localhost:3000)
 
 ## Demo Credentials
 
-| Email               | Password | Role     | Warehouse |
-| ------------------- | -------- | -------- | --------- |
+| Email               | Password    | Role     | Warehouse |
+| ------------------- | ----------- | -------- | --------- |
 | sarah@urbansole.com | password123 | Admin    | All       |
 | demo@demo.com       | password123 | Admin    | All       |
 | mike@urbansole.com  | password123 | Operator | LA Store  |
@@ -277,19 +277,20 @@ Create API keys at `/dashboard/api-keys` (admin only).
 
 When creating an API key, assign granular scopes to limit what the key can access. Each scope follows the `<entity>:<action>` pattern.
 
-| Scope | Description |
-| ----- | ----------- |
-| `products:read` | List and view products |
-| `products:write` | Create, update, delete, restore products |
-| `inventory:read` | List inventory items and stock levels |
-| `inventory:write` | Adjust stock quantities |
-| `transfers:read` | List and view transfers |
-| `transfers:write` | Create, accept, ship, receive transfers |
-| `sales:read` | List and view sales |
-| `sales:write` | Record new sales |
-| `warehouses:read` | List and view warehouses |
+| Scope             | Description                              |
+| ----------------- | ---------------------------------------- |
+| `products:read`   | List and view products                   |
+| `products:write`  | Create, update, delete, restore products |
+| `inventory:read`  | List inventory items and stock levels    |
+| `inventory:write` | Adjust stock quantities                  |
+| `transfers:read`  | List and view transfers                  |
+| `transfers:write` | Create, accept, ship, receive transfers  |
+| `sales:read`      | List and view sales                      |
+| `sales:write`     | Record new sales                         |
+| `warehouses:read` | List and view warehouses                 |
 
 **Rules:**
+
 - Session users (browser login) bypass scope checks — full access based on role.
 - API key users are strictly enforced — only the assigned scopes are granted.
 - ADMIN role bypasses all scope restrictions.
@@ -301,11 +302,11 @@ Receive HTTP callbacks when inventory events occur. Configure webhook subscripti
 
 **Available events:**
 
-| Event | Trigger |
-| ----- | ------- |
-| `sale.created` | A sale is recorded |
+| Event                | Trigger                               |
+| -------------------- | ------------------------------------- |
+| `sale.created`       | A sale is recorded                    |
 | `transfer.completed` | A transfer is received at destination |
-| `stock.low` | Stock falls below reorder point |
+| `stock.low`          | Stock falls below reorder point       |
 
 **Webhook payload:**
 
@@ -318,6 +319,7 @@ Receive HTTP callbacks when inventory events occur. Configure webhook subscripti
 ```
 
 **Features:**
+
 - Optional secret for HMAC signature verification
 - Active/inactive toggle
 - Test button to send a ping to your endpoint
@@ -325,45 +327,45 @@ Receive HTTP callbacks when inventory events occur. Configure webhook subscripti
 
 ### Available Endpoints
 
-| Method | Endpoint | Auth | Description |
-| ------ | -------- | ---- | ----------- |
-| GET | `/api/v1/products` | Session/api-key | List products (search, pagination, `?export=csv\|pdf`) |
-| GET | `/api/v1/products/:id` | Session/api-key | Get single product with inventory |
-| POST | `/api/v1/products` | `products:write` + ADMIN | Create product |
-| PATCH | `/api/v1/products/:id` | `products:write` + ADMIN | Update product |
-| DELETE | `/api/v1/products/:id` | `products:write` + ADMIN | Soft-delete product |
-| POST | `/api/v1/products/:id/restore` | `products:write` | Restore soft-deleted product |
-| POST | `/api/v1/products/bulk-delete` | `products:write` + ADMIN | Soft-delete multiple products |
-| GET | `/api/v1/customers` | Session/api-key | List customers |
-| POST | `/api/v1/customers` | `customers:write` | Create customer |
-| PATCH | `/api/v1/customers/:id` | `customers:write` + ADMIN | Update customer |
-| DELETE | `/api/v1/customers/:id` | `customers:write` + ADMIN | Soft-delete customer |
-| GET | `/api/v1/suppliers` | Session/api-key | List suppliers |
-| POST | `/api/v1/suppliers` | `suppliers:write` | Create supplier |
-| PATCH | `/api/v1/suppliers/:id` | `suppliers:write` + ADMIN | Update supplier |
-| DELETE | `/api/v1/suppliers/:id` | `suppliers:write` + ADMIN | Soft-delete supplier |
-| GET | `/api/v1/warehouses` | None (public) | List warehouses |
-| POST | `/api/v1/warehouses` | `warehouses:write` | Create warehouse |
-| PATCH | `/api/v1/warehouses/:id` | `warehouses:write` + ADMIN | Update warehouse |
-| DELETE | `/api/v1/warehouses/:id` | `warehouses:write` + ADMIN | Soft-delete warehouse |
-| GET | `/api/v1/inventory` | Session/api-key | List inventory items |
-| POST | `/api/v1/inventory` | `inventory:write` + ADMIN | Adjust stock |
-| POST | `/api/v1/sales` | `sales:write` | Record sale |
-| POST | `/api/v1/receive` | `receive:write` | Receive stock from supplier |
-| GET | `/api/v1/transfers` | Session/api-key | List transfers |
-| POST | `/api/v1/transfers` | `transfers:write` | Create transfer request |
-| POST | `/api/v1/transfers/:id/accept` | `transfers:write` | Accept transfer |
-| POST | `/api/v1/transfers/:id/ship` | `transfers:write` | Ship transfer |
-| POST | `/api/v1/transfers/:id/receive` | `transfers:write` | Receive transfer |
-| GET | `/api/v1/api-keys` | `api-keys:read` | List own API keys |
-| POST | `/api/v1/api-keys` | `api-keys:write` | Create API key |
-| DELETE | `/api/v1/api-keys/:id` | `api-keys:write` | Revoke API key |
-| GET | `/api/v1/audit-logs` | ADMIN | List audit logs |
-| GET | `/api/v1/webhooks` | `webhooks:read` | List webhook subscriptions |
-| POST | `/api/v1/webhooks` | `webhooks:write` | Create webhook subscription |
-| DELETE | `/api/v1/webhooks/:id` | `webhooks:write` | Delete webhook subscription |
-| POST | `/api/v1/webhooks/:id/test` | `webhooks:write` | Send test ping |
-| DELETE | `/api/v1/users/:id` | `users:write` + ADMIN | Delete operator |
+| Method | Endpoint                        | Auth                       | Description                                            |
+| ------ | ------------------------------- | -------------------------- | ------------------------------------------------------ |
+| GET    | `/api/v1/products`              | Session/api-key            | List products (search, pagination, `?export=csv\|pdf`) |
+| GET    | `/api/v1/products/:id`          | Session/api-key            | Get single product with inventory                      |
+| POST   | `/api/v1/products`              | `products:write` + ADMIN   | Create product                                         |
+| PATCH  | `/api/v1/products/:id`          | `products:write` + ADMIN   | Update product                                         |
+| DELETE | `/api/v1/products/:id`          | `products:write` + ADMIN   | Soft-delete product                                    |
+| POST   | `/api/v1/products/:id/restore`  | `products:write`           | Restore soft-deleted product                           |
+| POST   | `/api/v1/products/bulk-delete`  | `products:write` + ADMIN   | Soft-delete multiple products                          |
+| GET    | `/api/v1/customers`             | Session/api-key            | List customers                                         |
+| POST   | `/api/v1/customers`             | `customers:write`          | Create customer                                        |
+| PATCH  | `/api/v1/customers/:id`         | `customers:write` + ADMIN  | Update customer                                        |
+| DELETE | `/api/v1/customers/:id`         | `customers:write` + ADMIN  | Soft-delete customer                                   |
+| GET    | `/api/v1/suppliers`             | Session/api-key            | List suppliers                                         |
+| POST   | `/api/v1/suppliers`             | `suppliers:write`          | Create supplier                                        |
+| PATCH  | `/api/v1/suppliers/:id`         | `suppliers:write` + ADMIN  | Update supplier                                        |
+| DELETE | `/api/v1/suppliers/:id`         | `suppliers:write` + ADMIN  | Soft-delete supplier                                   |
+| GET    | `/api/v1/warehouses`            | None (public)              | List warehouses                                        |
+| POST   | `/api/v1/warehouses`            | `warehouses:write`         | Create warehouse                                       |
+| PATCH  | `/api/v1/warehouses/:id`        | `warehouses:write` + ADMIN | Update warehouse                                       |
+| DELETE | `/api/v1/warehouses/:id`        | `warehouses:write` + ADMIN | Soft-delete warehouse                                  |
+| GET    | `/api/v1/inventory`             | Session/api-key            | List inventory items                                   |
+| POST   | `/api/v1/inventory`             | `inventory:write` + ADMIN  | Adjust stock                                           |
+| POST   | `/api/v1/sales`                 | `sales:write`              | Record sale                                            |
+| POST   | `/api/v1/receive`               | `receive:write`            | Receive stock from supplier                            |
+| GET    | `/api/v1/transfers`             | Session/api-key            | List transfers                                         |
+| POST   | `/api/v1/transfers`             | `transfers:write`          | Create transfer request                                |
+| POST   | `/api/v1/transfers/:id/accept`  | `transfers:write`          | Accept transfer                                        |
+| POST   | `/api/v1/transfers/:id/ship`    | `transfers:write`          | Ship transfer                                          |
+| POST   | `/api/v1/transfers/:id/receive` | `transfers:write`          | Receive transfer                                       |
+| GET    | `/api/v1/api-keys`              | `api-keys:read`            | List own API keys                                      |
+| POST   | `/api/v1/api-keys`              | `api-keys:write`           | Create API key                                         |
+| DELETE | `/api/v1/api-keys/:id`          | `api-keys:write`           | Revoke API key                                         |
+| GET    | `/api/v1/audit-logs`            | ADMIN                      | List audit logs                                        |
+| GET    | `/api/v1/webhooks`              | `webhooks:read`            | List webhook subscriptions                             |
+| POST   | `/api/v1/webhooks`              | `webhooks:write`           | Create webhook subscription                            |
+| DELETE | `/api/v1/webhooks/:id`          | `webhooks:write`           | Delete webhook subscription                            |
+| POST   | `/api/v1/webhooks/:id/test`     | `webhooks:write`           | Send test ping                                         |
+| DELETE | `/api/v1/users/:id`             | `users:write` + ADMIN      | Delete operator                                        |
 
 ## License
 

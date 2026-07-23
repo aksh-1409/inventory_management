@@ -5,7 +5,7 @@ test.describe('Authentication pages', () => {
     await page.goto('/auth/login');
 
     await expect(page).toHaveTitle(/StockPilot/);
-    await expect(page.getByRole('heading', { name: /sign in/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /welcome back/i })).toBeVisible();
 
     const emailInput = page.getByLabel(/email/i);
     const passwordInput = page.getByLabel(/password/i);
@@ -33,7 +33,7 @@ test.describe('Authentication pages', () => {
   test('login page has signup link', async ({ page }) => {
     await page.goto('/auth/login');
 
-    const signupLink = page.getByRole('link', { name: /sign up/i });
+    const signupLink = page.getByRole('link', { name: /create one/i });
     await expect(signupLink).toBeVisible();
     await expect(signupLink).toHaveAttribute('href', '/auth/signup');
   });
