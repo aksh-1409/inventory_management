@@ -58,7 +58,8 @@ export interface InventoryItem {
   updatedAt: Date;
 }
 
-export type TransactionType = 'IN' | 'OUT' | 'TRANSFER_IN' | 'TRANSFER_OUT' | 'ADJUSTMENT' | 'DAMAGE';
+export type TransactionType =
+  'IN' | 'OUT' | 'TRANSFER_IN' | 'TRANSFER_OUT' | 'ADJUSTMENT' | 'DAMAGE';
 
 export interface InventoryTransaction {
   id: string;
@@ -106,7 +107,7 @@ export interface IdempotencyKey {
   id: string;
   key: string;
   responseStatus: number;
-  responseBody: Record<string, any>;
+  responseBody: Record<string, unknown>;
   createdAt: Date;
   expiresAt: Date;
 }

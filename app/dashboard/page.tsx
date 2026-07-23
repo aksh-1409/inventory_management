@@ -1,75 +1,83 @@
-import { auth } from '@/lib/auth'
-import { redirect } from 'next/navigation'
-import { prisma } from '@/lib/prisma'
-import DashboardClient from './DashboardClient'
+import { auth } from '@/lib/auth';
+import { redirect } from 'next/navigation';
+import { prisma } from '@/lib/prisma';
+import DashboardClient from './DashboardClient';
 
 async function getData(warehouseId: string | null) {
-  const isAdmin = !warehouseId
+  const isAdmin = !warehouseId;
 
-  const [products, warehouses, inventoryItems, pendingTransfers, recentTransactions] = await Promise.all([
-    prisma.product.findMany({
-      where: warehouseId
-        ? { deletedAt: null, inventoryItems: { some: { warehouseId } } }
-        : { deletedAt: null },
-      orderBy: { name: 'asc' },
-    }),
-    prisma.warehouse.findMany({
-      where: warehouseId ? { id: warehouseId } : {},
-      orderBy: { name: 'asc' },
-    }),
-    prisma.inventoryItem.findMany({
-      where: warehouseId ? { warehouseId } : {},
-      include: { product: true, warehouse: true },
-      orderBy: { product: { name: 'asc' } },
-    }),
-    prisma.transfer.findMany({
-      where: {
-        status: { in: ['REQUESTED', 'PENDING', 'IN_TRANSIT'] },
-        ...(warehouseId ? { OR: [{ toWarehouseId: warehouseId }, { fromWarehouseId: warehouseId }] } : {}),
-      },
-      include: {
-        product: true,
-        fromWarehouse: true,
-        toWarehouse: true,
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 10,
-    }),
-    prisma.inventoryTransaction.findMany({
-      where: warehouseId ? { inventoryItem: { warehouseId } } : {},
-      include: {
-        inventoryItem: {
-          include: { product: true, warehouse: true },
+  const [products, warehouses, inventoryItems, pendingTransfers, recentTransactions] =
+    await Promise.all([
+      prisma.product.findMany({
+        where: warehouseId
+          ? { deletedAt: null, inventoryItems: { some: { warehouseId } } }
+          : { deletedAt: null },
+        orderBy: { name: 'asc' },
+      }),
+      prisma.warehouse.findMany({
+        where: warehouseId ? { id: warehouseId } : {},
+        orderBy: { name: 'asc' },
+      }),
+      prisma.inventoryItem.findMany({
+        where: warehouseId ? { warehouseId } : {},
+        include: { product: true, warehouse: true },
+        orderBy: { product: { name: 'asc' } },
+      }),
+      prisma.transfer.findMany({
+        where: {
+          status: { in: ['REQUESTED', 'PENDING', 'IN_TRANSIT'] },
+          ...(warehouseId
+            ? { OR: [{ toWarehouseId: warehouseId }, { fromWarehouseId: warehouseId }] }
+            : {}),
         },
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 20,
-    }),
-  ])
+        include: {
+          product: true,
+          fromWarehouse: true,
+          toWarehouse: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+      }),
+      prisma.inventoryTransaction.findMany({
+        where: warehouseId ? { inventoryItem: { warehouseId } } : {},
+        include: {
+          inventoryItem: {
+            include: { product: true, warehouse: true },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+      }),
+    ]);
 
   // Build matrix data
-  const matrix: Record<string, Record<string, { quantity: number; reorderPoint: number }>> = {}
+  const matrix: Record<string, Record<string, { quantity: number; reorderPoint: number }>> = {};
   for (const item of inventoryItems) {
     if (!item.product.deletedAt) {
-      if (!matrix[item.productId]) matrix[item.productId] = {}
+      if (!matrix[item.productId]) matrix[item.productId] = {};
       matrix[item.productId][item.warehouseId] = {
         quantity: item.quantity,
         reorderPoint: item.product.reorderPoint,
-      }
+      };
     }
   }
 
   // Stats
-  const totalProducts = products.length
-  const totalWarehouses = warehouses.length
+  const totalProducts = products.length;
+  const totalWarehouses = warehouses.length;
   const lowStockCount = inventoryItems.filter(
     (i) => !i.product.deletedAt && i.quantity <= i.product.reorderPoint
-  ).length
-  const pendingCount = pendingTransfers.length
+  ).length;
+  const pendingCount = pendingTransfers.length;
 
   return {
     stats: { totalProducts, totalWarehouses, lowStockCount, pendingCount },
-    products: products.map((p) => ({ id: p.id, name: p.name, sku: p.sku, reorderPoint: p.reorderPoint })),
+    products: products.map((p) => ({
+      id: p.id,
+      name: p.name,
+      sku: p.sku,
+      reorderPoint: p.reorderPoint,
+    })),
     warehouses: warehouses.map((w) => ({ id: w.id, name: w.name })),
     matrix,
     pendingTransfers: pendingTransfers.map((t) => ({
@@ -90,14 +98,14 @@ async function getData(warehouseId: string | null) {
       product: { name: t.inventoryItem.product.name },
       warehouse: { name: t.inventoryItem.warehouse.name },
     })),
-  }
+  };
 }
 
 export default async function DashboardPage() {
-  const session = await auth()
-  if (!session) redirect('/auth/login')
+  const session = await auth();
+  if (!session) redirect('/auth/login');
 
-  const data = await getData(session.user.warehouseId)
+  const data = await getData(session.user.warehouseId);
 
   return (
     <DashboardClient
@@ -111,5 +119,5 @@ export default async function DashboardPage() {
       userRole={session.user.role}
       userWarehouseId={session.user.warehouseId}
     />
-  )
+  );
 }

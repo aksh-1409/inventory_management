@@ -1,38 +1,41 @@
-'use client'
+'use client';
 
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react'
-import { CheckCircle2, AlertCircle, X, RotateCcw } from 'lucide-react'
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { CheckCircle2, AlertCircle, X, RotateCcw } from 'lucide-react';
 
-export type ToastType = 'success' | 'error'
+export type ToastType = 'success' | 'error';
 
 interface ToastMessage {
-  id: string
-  message: string
-  type: ToastType
-  onUndo?: () => void
+  id: string;
+  message: string;
+  type: ToastType;
+  onUndo?: () => void;
 }
 
 interface ToastContextValue {
-  showToast: (message: string, type?: ToastType, onUndo?: () => void) => void
+  showToast: (message: string, type?: ToastType, onUndo?: () => void) => void;
 }
 
-const ToastContext = createContext<ToastContextValue | undefined>(undefined)
+const ToastContext = createContext<ToastContextValue | undefined>(undefined);
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
-  const [toast, setToast] = useState<ToastMessage | null>(null)
+  const [toast, setToast] = useState<ToastMessage | null>(null);
 
-  const showToast = useCallback((message: string, type: ToastType = 'success', onUndo?: () => void) => {
-    setToast({ id: Math.random().toString(), message, type, onUndo })
-  }, [])
+  const showToast = useCallback(
+    (message: string, type: ToastType = 'success', onUndo?: () => void) => {
+      setToast({ id: Math.random().toString(), message, type, onUndo });
+    },
+    []
+  );
 
   useEffect(() => {
     if (toast) {
       const timer = setTimeout(() => {
-        setToast(null)
-      }, 4000)
-      return () => clearTimeout(timer)
+        setToast(null);
+      }, 4000);
+      return () => clearTimeout(timer);
     }
-  }, [toast])
+  }, [toast]);
 
   return (
     <ToastContext.Provider value={{ showToast }}>
@@ -55,7 +58,10 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             <div className="flex items-center gap-1">
               {toast.onUndo && (
                 <button
-                  onClick={() => { toast.onUndo?.(); setToast(null) }}
+                  onClick={() => {
+                    toast.onUndo?.();
+                    setToast(null);
+                  }}
                   className="text-[var(--accent)] hover:text-[var(--text-heading)] transition-colors cursor-pointer p-1"
                   title="Undo"
                 >
@@ -81,11 +87,11 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         </div>
       )}
     </ToastContext.Provider>
-  )
+  );
 }
 
 export function useToast() {
-  const context = useContext(ToastContext)
-  if (!context) throw new Error('useToast must be used within ToastProvider')
-  return context
+  const context = useContext(ToastContext);
+  if (!context) throw new Error('useToast must be used within ToastProvider');
+  return context;
 }

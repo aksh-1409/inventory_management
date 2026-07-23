@@ -1,5 +1,5 @@
-import { prisma } from '@/lib/prisma'
-import crypto from 'crypto'
+import { prisma } from '@/lib/prisma';
+import crypto from 'crypto';
 
 /**
  * Dispatch a webhook event to all active subscribers of that event type.
@@ -9,29 +9,29 @@ export async function dispatchWebhook(eventType: string, data: Record<string, un
   try {
     const subscriptions = await prisma.webhookSubscription.findMany({
       where: { eventType, isActive: true },
-    })
+    });
 
-    if (subscriptions.length === 0) return
+    if (subscriptions.length === 0) return;
 
     const payload = {
       event: eventType,
       timestamp: new Date().toISOString(),
       data,
-    }
+    };
 
     await Promise.allSettled(
       subscriptions.map(async (sub) => {
         try {
           const headers: Record<string, string> = {
             'Content-Type': 'application/json',
-          }
+          };
 
           if (sub.secret) {
             const signature = crypto
               .createHmac('sha256', sub.secret)
               .update(JSON.stringify(payload))
-              .digest('hex')
-            headers['X-Webhook-Signature'] = `sha256=${signature}`
+              .digest('hex');
+            headers['X-Webhook-Signature'] = `sha256=${signature}`;
           }
 
           const res = await fetch(sub.targetUrl, {
@@ -39,7 +39,7 @@ export async function dispatchWebhook(eventType: string, data: Record<string, un
             headers,
             body: JSON.stringify(payload),
             signal: AbortSignal.timeout(10000),
-          })
+          });
 
           await prisma.webhookSubscription.update({
             where: { id: sub.id },
@@ -47,16 +47,18 @@ export async function dispatchWebhook(eventType: string, data: Record<string, un
               lastTriggeredAt: new Date(),
               retryCount: res.ok ? 0 : { increment: 1 },
             },
-          })
+          });
         } catch {
-          await prisma.webhookSubscription.update({
-            where: { id: sub.id },
-            data: { retryCount: { increment: 1 } },
-          }).catch(() => {})
+          await prisma.webhookSubscription
+            .update({
+              where: { id: sub.id },
+              data: { retryCount: { increment: 1 } },
+            })
+            .catch(() => {});
         }
       })
-    )
+    );
   } catch (e) {
-    console.error(`[WEBHOOK] dispatch failed for ${eventType}`, e)
+    console.error(`[WEBHOOK] dispatch failed for ${eventType}`, e);
   }
 }

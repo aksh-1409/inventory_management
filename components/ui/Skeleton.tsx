@@ -16,7 +16,7 @@ export function SkeletonRow() {
         </div>
       </td>
     </tr>
-  )
+  );
 }
 
 export function SkeletonCard() {
@@ -30,9 +30,9 @@ export function SkeletonCard() {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 export function SkeletonText({ className = '' }: { className?: string }) {
-  return <div className={`skeleton h-4 w-full ${className}`} />
+  return <div className={`skeleton h-4 w-full ${className}`} />;
 }
