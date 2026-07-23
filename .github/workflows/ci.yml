@@ -39,11 +39,11 @@ jobs:
 
       - run: npm run lint
 
-      - run: npx tsc --noEmit
-
       - run: npx prisma generate
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/stockpilot_test
+
+      - run: npx tsc --noEmit
 
       - run: npm test
         env:
