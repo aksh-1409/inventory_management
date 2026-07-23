@@ -45,6 +45,10 @@ jobs:
 
       - run: npx tsc --noEmit
 
+      - run: npx prisma db push
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/stockpilot_test
+
       - run: npm test
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/stockpilot_test
