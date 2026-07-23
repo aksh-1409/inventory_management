@@ -50,7 +50,7 @@ describe('POST /api/v1/sales', () => {
     mocks.createTransaction.mockReturnValue(
       Promise.resolve({ id: 't1', createdAt: new Date('2026-01-01') })
     );
-    mocks.transaction.mockImplementation(async (cb: any) =>
+    mocks.transaction.mockImplementation(async (cb: (tx: Record<string, unknown>) => unknown) =>
       cb({
         inventoryItem: { findUnique: mocks.findInventory, update: mocks.updateInventory },
         inventoryTransaction: { create: mocks.createTransaction },

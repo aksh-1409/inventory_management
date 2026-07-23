@@ -34,6 +34,7 @@ function LoginForm() {
   useEffect(() => {
     const errParam = searchParams?.get('error');
     const codeParam = searchParams?.get('code');
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (errParam) setError(ERROR_MESSAGES[codeParam || errParam] || ERROR_MESSAGES.Default);
     if (searchParams?.get('registered') === 'true') setError(null);
 

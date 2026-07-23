@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { parsePagination, parseSearch } from '@/lib/pagination';
+import { UserRole } from '@/lib/generated/prisma/enums';
 import UsersClient from './UsersClient';
 
 export default async function UsersPage(props: {
@@ -20,12 +21,18 @@ export default async function UsersPage(props: {
   const q = parseSearch(searchParams);
   const { page, pageSize, skip, take } = parsePagination(searchParams, { page: 1, pageSize: 100 });
 
+  const roleFilter =
+    q.toUpperCase() === 'ADMIN'
+      ? UserRole.ADMIN
+      : q.toUpperCase() === 'OPERATOR'
+        ? UserRole.OPERATOR
+        : undefined;
   const where = q
     ? {
         OR: [
           { name: { contains: q, mode: 'insensitive' as const } },
           { email: { contains: q, mode: 'insensitive' as const } },
-          { role: { contains: q, mode: 'insensitive' as const } },
+          ...(roleFilter ? [{ role: roleFilter }] : []),
         ],
       }
     : {};
@@ -46,17 +53,9 @@ export default async function UsersPage(props: {
     name: u.name,
     email: u.email,
     role: u.role,
-    warehouse: u.warehouse ? { id: u.warehouse.id, name: u.warehouse.name } : null,
+    warehouse: (u as { warehouse: { id: string; name: string } | null }).warehouse,
     createdAt: u.createdAt.toISOString(),
   }));
 
-  return (
-    <UsersClient
-      initialUsers={users}
-      total={total}
-      page={page}
-      pageSize={pageSize}
-      currentUserId={session.user.id}
-    />
-  );
+  return <UsersClient initialUsers={users} currentUserId={session.user.id} />;
 }

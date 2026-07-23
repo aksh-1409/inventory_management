@@ -54,7 +54,7 @@ describe('POST /api/auth/forgot-password', () => {
       role: 'OPERATOR',
       name: 'Op',
     });
-    mocks.transaction.mockImplementation(async (fn: (tx: any) => any) => {
+    mocks.transaction.mockImplementation(async (fn: (tx: Record<string, unknown>) => unknown) => {
       const tx = { passwordResetRequest: { updateMany: mocks.updateMany, create: mocks.create } };
       mocks.create.mockResolvedValue({ id: 'req-uuid-1' });
       return fn(tx);
@@ -114,7 +114,7 @@ describe('POST /api/auth/forgot-password', () => {
 
   it('cancels previous PENDING or APPROVED requests for the same user', async () => {
     mocks.findUnique.mockResolvedValue({ id: 'u1', email: 'op@test.com', role: 'OPERATOR' });
-    mocks.transaction.mockImplementation(async (fn: (tx: any) => any) => {
+    mocks.transaction.mockImplementation(async (fn: (tx: Record<string, unknown>) => unknown) => {
       const tx = { passwordResetRequest: { updateMany: mocks.updateMany, create: mocks.create } };
       mocks.create.mockResolvedValue({ id: 'req-uuid-1' });
       return fn(tx);

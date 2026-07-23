@@ -4,3 +4,5 @@ build
 node_modules
 coverage
 lib/generated
+test-results
+playwright-report

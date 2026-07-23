@@ -72,7 +72,6 @@ export default async function SalesPage(props: {
       }))}
       warehouses={warehouses.map((w) => ({ id: w.id, name: w.name }))}
       customers={customers.map((c) => ({ id: c.id, name: c.name, phone: c.phone }))}
-      userRole={session.user.role}
       allCustomers={customers.map((c) => ({ id: c.id, name: c.name, phone: c.phone }))}
     />
   );

@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useSession } from 'next-auth/react';
 import { User, Mail, Shield, Warehouse, Calendar, Key, Loader2, Eye, EyeOff } from 'lucide-react';
 
 interface Props {
@@ -18,7 +17,6 @@ interface Props {
 }
 
 export default function ProfileClient({ profile }: Props) {
-  const { data: session } = useSession();
   const isOperator = profile.role === 'OPERATOR';
 
   const [currentPassword, setCurrentPassword] = useState('');

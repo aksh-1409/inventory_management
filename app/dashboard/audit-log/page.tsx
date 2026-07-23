@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { redirect } from 'next/navigation';
-import { Search, Filter, ChevronDown, ChevronUp, Clock, ShieldAlert } from 'lucide-react';
+import { Search, ChevronDown, ChevronUp, Clock, ShieldAlert } from 'lucide-react';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { PaginationBar } from '@/components/ui/PaginationBar';
 import { SkeletonCard } from '@/components/ui/Skeleton';
@@ -93,6 +93,7 @@ export default function AuditLogPage() {
       redirect('/dashboard');
       return;
     }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchLogs();
   }, [fetchLogs, session, isAdmin]);
 

@@ -92,6 +92,7 @@ export default function WarehousesClient({
   const clearSearch = useCallback(() => router.push(pathname), [router, pathname]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setWarehouses(initialWarehouses);
     setLoading(false);
   }, [initialWarehouses]);
@@ -168,6 +169,7 @@ export default function WarehousesClient({
           item: {
             ...validated,
             id: `new-${Date.now()}`,
+            deletedAt: null,
             createdAt: new Date().toISOString(),
             inventoryItems: [],
             totalProducts: 0,

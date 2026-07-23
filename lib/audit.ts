@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import { Prisma } from '@prisma/client';
+import { Prisma } from '@/lib/generated/prisma/client';
 
 type EntityType = string;
 type Action = 'CREATE' | 'UPDATE' | 'DELETE' | 'RESTORE';
@@ -13,7 +13,13 @@ export async function auditLog(
 ) {
   try {
     await prisma.auditLog.create({
-      data: { userId, entityType, entityId, action, changes: (changes ?? undefined) as Prisma.InputJsonValue | undefined },
+      data: {
+        userId,
+        entityType,
+        entityId,
+        action,
+        changes: (changes ?? undefined) as Prisma.InputJsonValue | undefined,
+      },
     });
   } catch (error) {
     console.error(`[AUDIT_LOG_ERROR] ${entityType} ${action} ${entityId}:`, error);

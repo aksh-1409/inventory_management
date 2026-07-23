@@ -20,9 +20,6 @@ const store = new Map<string, RateLimitEntry>();
 const BASE_MAX = 5;
 const BASE_WINDOW_MS = 15 * 60 * 1000;
 
-const WINDOW_MULTIPLIER = 2;
-const MAX_WINDOW_MS = 4 * 60 * 60 * 1000; // 4 hours cap
-
 export interface RateLimitResult {
   success: boolean;
   retryAfterMs?: number;

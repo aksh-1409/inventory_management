@@ -4,8 +4,6 @@ import { useEffect } from 'react';
 
 type KeyCombo = string;
 
-const COMBO_MAP: Record<string, { key: string; ctrlOrMeta: boolean }> = {};
-
 function parseCombo(combo: KeyCombo) {
   const parts = combo.toLowerCase().split('+');
   const hasCtrl = parts.includes('ctrl');

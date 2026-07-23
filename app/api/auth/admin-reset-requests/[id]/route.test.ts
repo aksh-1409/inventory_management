@@ -32,7 +32,7 @@ const ctx = { params: Promise.resolve({ id: 'req-uuid' }) };
 describe('POST /api/auth/admin-reset-requests/[id]', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.transaction.mockImplementation(async (fn: (tx: any) => any) => {
+    mocks.transaction.mockImplementation(async (fn: (tx: Record<string, unknown>) => unknown) => {
       const tx = {
         $queryRaw: vi.fn(),
         passwordResetRequest: { findUnique: mocks.findUnique, update: mocks.prUpdate },

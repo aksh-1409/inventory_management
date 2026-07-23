@@ -163,6 +163,7 @@ export default function TransfersClient({
   const userWarehouseName = warehouses.find((w) => w.id === userWarehouseId)?.name || '';
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setTransfers(initialTransfers);
     if (cursorMode) {
       setNextCursor(initialNextCursor ?? null);

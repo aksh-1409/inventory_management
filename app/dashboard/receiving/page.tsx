@@ -18,22 +18,25 @@ export default async function ReceivingPage(props: {
   if (sp?.pageSize) searchParams.set('pageSize', sp.pageSize);
 
   const q = parseSearch(searchParams);
-  const { page, pageSize, skip, take } = parsePagination(searchParams);
+  const { skip, take } = parsePagination(searchParams);
 
-  const txWhere: Prisma.InventoryTransactionWhereInput = { type: 'IN' };
+  const inventoryItemWhere: Record<string, unknown> = {};
   if (session.user.warehouseId) {
-    txWhere.inventoryItem = { warehouseId: session.user.warehouseId };
+    inventoryItemWhere.warehouseId = session.user.warehouseId;
   }
   if (q) {
-    const searchFilter = {
-      OR: [
-        { product: { name: { contains: q, mode: 'insensitive' as const } } },
-        { product: { sku: { contains: q, mode: 'insensitive' as const } } },
-        { warehouse: { name: { contains: q, mode: 'insensitive' as const } } },
-      ],
-    };
-    txWhere.inventoryItem = { ...txWhere.inventoryItem, ...searchFilter };
+    inventoryItemWhere.OR = [
+      { product: { name: { contains: q, mode: 'insensitive' as const } } },
+      { product: { sku: { contains: q, mode: 'insensitive' as const } } },
+      { warehouse: { name: { contains: q, mode: 'insensitive' as const } } },
+    ];
   }
+  const txWhere: Prisma.InventoryTransactionWhereInput = {
+    type: 'IN',
+    ...(Object.keys(inventoryItemWhere).length
+      ? { inventoryItem: inventoryItemWhere as Prisma.InventoryItemWhereInput }
+      : {}),
+  };
 
   const [transactions, total, products, warehouses, suppliers] = await Promise.all([
     prisma.inventoryTransaction.findMany({
@@ -69,7 +72,6 @@ export default async function ReceivingPage(props: {
       products={products.map((p) => ({ id: p.id, name: p.name, sku: p.sku }))}
       warehouses={warehouses.map((w) => ({ id: w.id, name: w.name }))}
       suppliers={suppliers.map((s) => ({ id: s.id, name: s.name }))}
-      userRole={session.user.role}
     />
   );
 }

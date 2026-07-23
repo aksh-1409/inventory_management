@@ -17,10 +17,8 @@ import {
   Key,
   ShoppingCart,
   Truck,
-  PlusCircle,
   Boxes,
   Receipt,
-  UserCircle,
   Shield,
 } from 'lucide-react';
 
@@ -47,68 +45,81 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Settings', href: '/dashboard/settings', icon: Settings, adminOnly: true },
 ];
 
-export default function Sidebar() {
-  const { data: session } = useSession();
-  const pathname = usePathname();
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+function NavLink({
+  item,
+  pathname,
+  onNavigate,
+}: {
+  item: NavItem;
+  pathname: string;
+  onNavigate: () => void;
+}) {
+  const isActive =
+    pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
+  const Icon = item.icon;
 
-  const isAdmin = session?.user?.role === 'ADMIN';
-  const filteredItems = NAV_ITEMS.filter((item) => !item.adminOnly || isAdmin);
-
-  function NavLink({ item }: { item: NavItem }) {
-    const isActive =
-      pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
-    const Icon = item.icon;
-
-    return (
-      <Link
-        href={item.href}
-        onClick={() => setMobileOpen(false)}
-        aria-current={isActive ? 'page' : undefined}
+  return (
+    <Link
+      href={item.href}
+      onClick={onNavigate}
+      aria-current={isActive ? 'page' : undefined}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        padding: '8px 12px',
+        minHeight: 40,
+        borderRadius: 8,
+        fontSize: 14,
+        fontWeight: 500,
+        textDecoration: 'none',
+        transition: 'background 150ms ease, color 150ms ease',
+        background: isActive ? 'rgba(255,255,255,0.08)' : 'transparent',
+        color: isActive ? '#FCFDFF' : 'rgba(252,253,255,0.70)',
+      }}
+      onMouseEnter={(e) => {
+        if (!isActive) {
+          (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(255,255,255,0.04)';
+          (e.currentTarget as HTMLAnchorElement).style.color = '#FCFDFF';
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (!isActive) {
+          (e.currentTarget as HTMLAnchorElement).style.background = 'transparent';
+          (e.currentTarget as HTMLAnchorElement).style.color = 'rgba(252,253,255,0.70)';
+        }
+      }}
+    >
+      <Icon
         style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-          padding: '8px 12px',
-          minHeight: 40,
-          borderRadius: 8,
-          fontSize: 14,
-          fontWeight: 500,
-          textDecoration: 'none',
-          transition: 'background 150ms ease, color 150ms ease',
-          background: isActive ? 'rgba(255,255,255,0.08)' : 'transparent',
-          color: isActive ? '#FCFDFF' : 'rgba(252,253,255,0.70)',
+          width: 16,
+          height: 16,
+          flexShrink: 0,
+          color: isActive ? '#FCFDFF' : 'rgba(252,253,255,0.50)',
         }}
-        onMouseEnter={(e) => {
-          if (!isActive) {
-            (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(255,255,255,0.04)';
-            (e.currentTarget as HTMLAnchorElement).style.color = '#FCFDFF';
-          }
-        }}
-        onMouseLeave={(e) => {
-          if (!isActive) {
-            (e.currentTarget as HTMLAnchorElement).style.background = 'transparent';
-            (e.currentTarget as HTMLAnchorElement).style.color = 'rgba(252,253,255,0.70)';
-          }
-        }}
-      >
-        <Icon
-          style={{
-            width: 16,
-            height: 16,
-            flexShrink: 0,
-            color: isActive ? '#FCFDFF' : 'rgba(252,253,255,0.50)',
-          }}
-        />
-        <span>{item.label}</span>
-      </Link>
-    );
-  }
+      />
+      <span>{item.label}</span>
+    </Link>
+  );
+}
 
-  const SidebarContent = () => (
+function SidebarContent({
+  filteredItems,
+  session,
+  pathname,
+  onNavigate,
+  onLogout,
+}: {
+  filteredItems: NavItem[];
+  session: {
+    user?: { name?: string | null; role?: string | null; warehouseName?: string | null };
+  } | null;
+  pathname: string;
+  onNavigate: () => void;
+  onLogout: () => void;
+}) {
+  return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      {/* Logo */}
       <div
         style={{
           display: 'flex',
@@ -139,7 +150,6 @@ export default function Sidebar() {
         </span>
       </div>
 
-      {/* Nav */}
       <nav
         style={{
           flex: 1,
@@ -151,11 +161,10 @@ export default function Sidebar() {
         }}
       >
         {filteredItems.map((item) => (
-          <NavLink key={item.href} item={item} />
+          <NavLink key={item.href} item={item} pathname={pathname} onNavigate={onNavigate} />
         ))}
       </nav>
 
-      {/* User Footer */}
       <div
         style={{
           padding: '12px 12px',
@@ -211,7 +220,7 @@ export default function Sidebar() {
           </p>
         </Link>
         <button
-          onClick={() => setShowLogoutConfirm(true)}
+          onClick={onLogout}
           title="Sign out"
           style={{
             width: 32,
@@ -239,20 +248,29 @@ export default function Sidebar() {
       </div>
     </div>
   );
+}
+
+export default function Sidebar() {
+  const { data: session } = useSession();
+  const pathname = usePathname();
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
+  const isAdmin = session?.user?.role === 'ADMIN';
+  const filteredItems = NAV_ITEMS.filter((item) => !item.adminOnly || isAdmin);
+
+  const closeMobile = () => setMobileOpen(false);
 
   return (
     <>
-      {/* Hamburger: CSS hides on lg+ */}
       <button className="hamburger-btn" onClick={() => setMobileOpen(true)} aria-label="Open menu">
         <Menu style={{ width: 16, height: 16 }} />
       </button>
 
-      {/* Mobile: overlay + slide-in sidebar */}
       <div className="sidebar-mobile-wrap">
-        {/* Backdrop */}
         {mobileOpen && (
           <div
-            onClick={() => setMobileOpen(false)}
+            onClick={closeMobile}
             style={{
               position: 'fixed',
               inset: 0,
@@ -262,7 +280,6 @@ export default function Sidebar() {
           />
         )}
 
-        {/* Mobile Sidebar */}
         <div
           style={{
             position: 'fixed',
@@ -278,7 +295,7 @@ export default function Sidebar() {
           }}
         >
           <button
-            onClick={() => setMobileOpen(false)}
+            onClick={closeMobile}
             aria-label="Close menu"
             style={{
               position: 'absolute',
@@ -306,16 +323,26 @@ export default function Sidebar() {
           >
             <X style={{ width: 16, height: 16 }} />
           </button>
-          <SidebarContent />
+          <SidebarContent
+            filteredItems={filteredItems}
+            session={session}
+            pathname={pathname}
+            onNavigate={closeMobile}
+            onLogout={() => setShowLogoutConfirm(true)}
+          />
         </div>
       </div>
 
-      {/* Desktop Sidebar: CSS shows on lg+ */}
       <aside className="sidebar-desktop">
-        <SidebarContent />
+        <SidebarContent
+          filteredItems={filteredItems}
+          session={session}
+          pathname={pathname}
+          onNavigate={closeMobile}
+          onLogout={() => setShowLogoutConfirm(true)}
+        />
       </aside>
 
-      {/* Logout confirmation modal */}
       {showLogoutConfirm && (
         <>
           <div
