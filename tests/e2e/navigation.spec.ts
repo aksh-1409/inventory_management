@@ -11,7 +11,7 @@ test.describe('Public navigation', () => {
   test('login page navigates from home', async ({ page }) => {
     await page.goto('/');
 
-    const loginLink = page.getByRole('link', { name: /sign in/i });
+    const loginLink = page.getByRole('link', { name: /log in/i });
     if (await loginLink.isVisible()) {
       await loginLink.click();
       await expect(page).toHaveURL(/\/auth\/login/);
@@ -21,6 +21,6 @@ test.describe('Public navigation', () => {
   test('signup page loads directly', async ({ page }) => {
     await page.goto('/auth/signup');
 
-    await expect(page.getByRole('heading', { name: /sign up/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /create an account/i })).toBeVisible();
   });
 });
