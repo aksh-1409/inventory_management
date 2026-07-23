@@ -4,7 +4,6 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Search,
-  Command,
   LayoutGrid,
   Package,
   Warehouse,
@@ -18,7 +17,6 @@ import {
   Settings,
   Shield,
   Plus,
-  X,
 } from 'lucide-react';
 import { useHotkey } from '@/lib/useHotkey';
 
@@ -182,6 +180,7 @@ export function CommandPalette({ isAdmin = false }: CommandPaletteProps) {
   );
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSelectedIndex(0);
   }, [query]);
 

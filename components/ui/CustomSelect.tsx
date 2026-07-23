@@ -39,6 +39,7 @@ export function CustomSelect({
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (open) setFocusedIndex(options.findIndex((o) => o.value === value));
   }, [open, options, value]);
 

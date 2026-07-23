@@ -70,7 +70,9 @@ describe('POST /api/auth/password-reset-request/complete', () => {
       return dot > 0 ? { requestId: value.slice(0, dot), secret: value.slice(dot + 1) } : null;
     });
     mocks.hash.mockResolvedValue('bcrypt-hash');
-    mocks.transaction.mockImplementation(async (fn: (tx: any) => any) => fn(makeTx()));
+    mocks.transaction.mockImplementation(async (fn: (tx: Record<string, unknown>) => unknown) =>
+      fn(makeTx())
+    );
   });
 
   it('rejects without a cookie', async () => {

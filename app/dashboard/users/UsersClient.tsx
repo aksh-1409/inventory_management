@@ -1,8 +1,20 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { Users, Search, X, Shield, User, Check, Loader2, XCircle, Clock3 } from 'lucide-react';
+import {
+  Users,
+  Search,
+  X,
+  Shield,
+  User,
+  Check,
+  Loader2,
+  XCircle,
+  Clock3,
+  Trash2,
+} from 'lucide-react';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
 
 interface UserData {
   id: string;
@@ -28,10 +40,12 @@ interface Props {
 }
 
 export default function UsersClient({ initialUsers, currentUserId }: Props) {
-  const [users] = useState<UserData[]>(initialUsers);
+  const [users, setUsers] = useState<UserData[]>(initialUsers);
   const [search, setSearch] = useState('');
   const [requests, setRequests] = useState<ResetRequestData[]>([]);
   const [reviewing, setReviewing] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<UserData | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function loadRequests() {
@@ -42,6 +56,7 @@ export default function UsersClient({ initialUsers, currentUserId }: Props) {
   }
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadRequests();
     const timer = setInterval(loadRequests, 5000);
     return () => clearInterval(timer);
@@ -59,6 +74,20 @@ export default function UsersClient({ initialUsers, currentUserId }: Props) {
     setReviewing(null);
     if (!response.ok) return setError(data.error || 'Unable to review request.');
     setRequests((current) => current.filter((request) => request.id !== id));
+  }
+
+  async function handleDelete() {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    setError(null);
+    const response = await fetch(`/api/v1/users/${deleteTarget.id}`, {
+      method: 'DELETE',
+    });
+    const data = await response.json();
+    setDeleting(false);
+    setDeleteTarget(null);
+    if (!response.ok) return setError(data.error || 'Unable to delete user.');
+    setUsers((current) => current.filter((u) => u.id !== deleteTarget.id));
   }
 
   const filtered = useMemo(() => {
@@ -291,6 +320,19 @@ export default function UsersClient({ initialUsers, currentUserId }: Props) {
                   >
                     Joined
                   </th>
+                  <th
+                    style={{
+                      padding: '16px 24px',
+                      textAlign: 'center',
+                      fontSize: 12,
+                      fontWeight: 600,
+                      color: 'var(--text-muted)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                    }}
+                  >
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -345,6 +387,23 @@ export default function UsersClient({ initialUsers, currentUserId }: Props) {
                         {new Date(u.createdAt).toLocaleDateString()}
                       </span>
                     </td>
+                    <td data-label="Actions" style={{ padding: '16px 24px', textAlign: 'center' }}>
+                      {u.id !== currentUserId && (
+                        <button
+                          onClick={() => setDeleteTarget(u)}
+                          className="btn btn-ghost"
+                          style={{
+                            color: 'var(--danger)',
+                            padding: '6px 10px',
+                            minHeight: 36,
+                            minWidth: 36,
+                          }}
+                          aria-label={`Delete ${u.name}`}
+                        >
+                          <Trash2 style={{ width: 14, height: 14 }} />
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -352,6 +411,23 @@ export default function UsersClient({ initialUsers, currentUserId }: Props) {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        open={!!deleteTarget}
+        title="Delete user"
+        message={
+          deleteTarget
+            ? `Are you sure you want to delete ${deleteTarget.name} (${deleteTarget.email})? This action cannot be undone.`
+            : ''
+        }
+        confirmLabel="Delete"
+        variant="destructive"
+        onConfirm={handleDelete}
+        onCancel={() => {
+          setDeleteTarget(null);
+        }}
+        loading={deleting}
+      />
     </div>
   );
 }

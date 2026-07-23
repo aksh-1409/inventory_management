@@ -10,7 +10,6 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
     if (!authResult) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    const { user } = authResult;
 
     const { id } = await ctx.params;
     const warehouse = await prisma.warehouse.findUnique({

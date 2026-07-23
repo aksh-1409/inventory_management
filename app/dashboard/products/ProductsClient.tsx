@@ -122,6 +122,7 @@ export default function ProductsClient({
   const isAdmin = userRole === 'ADMIN';
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setProducts(initialProducts);
     if (cursorMode) {
       setNextCursor(initialNextCursor ?? null);

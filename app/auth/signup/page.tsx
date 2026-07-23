@@ -73,7 +73,6 @@ export default function SignupPage() {
 
   const passwordStrength =
     password.length === 0 ? 0 : password.length < 6 ? 1 : password.length < 10 ? 2 : 3;
-  const strengthColors = ['', 'bg-red-500', 'bg-yellow-500', 'bg-green-500'];
   const strengthLabels = ['', 'Weak', 'Fair', 'Strong'];
 
   const inputStyle: React.CSSProperties = {
@@ -334,7 +333,7 @@ export default function SignupPage() {
                 ))}
               </select>
               <p style={{ fontSize: 11, color: 'rgba(161,161,170,0.5)', marginTop: 4 }}>
-                You'll only see inventory and transfers for this warehouse.
+                You&apos;ll only see inventory and transfers for this warehouse.
               </p>
             </div>
 

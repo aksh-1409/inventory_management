@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { checkRateLimit } from '@/lib/rate-limit';
 import { setupSchema } from '@/lib/schemas';
 
 export async function PUT(req: Request) {

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useOptimistic, useTransition, useCallback } from 'react';
 import { SkeletonRow } from '@/components/ui/Skeleton';
-import { Package, X, Loader2 } from 'lucide-react';
+import { Package, Loader2 } from 'lucide-react';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { SearchInput } from '@/components/ui/SearchInput';
@@ -78,6 +78,7 @@ export default function InventoryClient({
   const isAdmin = userRole === 'ADMIN';
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setItems(initialItems);
     if (cursorMode) {
       setNextCursor(initialNextCursor ?? null);

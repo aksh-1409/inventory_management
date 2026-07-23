@@ -87,6 +87,7 @@ export default function SuppliersClient({
   const clearSearch = useCallback(() => router.push(pathname), [router, pathname]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSuppliers(initialSuppliers);
     setLoading(false);
   }, [initialSuppliers]);

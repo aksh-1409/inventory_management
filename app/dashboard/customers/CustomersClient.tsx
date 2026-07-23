@@ -96,6 +96,7 @@ export default function CustomersClient({
   const clearSearch = useCallback(() => router.push(pathname), [router, pathname]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCustomers(initialCustomers);
     setLoading(false);
   }, [initialCustomers]);

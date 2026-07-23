@@ -48,7 +48,6 @@ interface Props {
   products: Product[];
   warehouses: Warehouse[];
   customers: Customer[];
-  userRole: string;
   allCustomers: Customer[];
 }
 
@@ -62,7 +61,6 @@ export default function SalesClient({
   products,
   warehouses,
   customers,
-  userRole,
   allCustomers,
 }: Props) {
   const { showToast } = useToast();
@@ -100,6 +98,7 @@ export default function SalesClient({
   const phoneRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSales(initialSales);
     setLoading(false);
   }, [initialSales]);
@@ -194,7 +193,6 @@ export default function SalesClient({
   }
 
   function validateSale() {
-    const qty = parseInt(form.quantity);
     const up =
       parseFloat(form.unitPrice) || products.find((p) => p.id === form.productId)?.price || 0;
     const payload = {

@@ -12,9 +12,10 @@ export function SearchInput({ placeholder = 'Search…' }: Props) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [value, setValue] = useState(searchParams.get('q') || '');
-  const timer = useRef<ReturnType<typeof setTimeout>>();
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setValue(searchParams.get('q') || '');
   }, [searchParams]);
 

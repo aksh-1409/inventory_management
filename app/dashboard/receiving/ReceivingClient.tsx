@@ -42,7 +42,6 @@ interface Props {
   products: Product[];
   warehouses: Warehouse[];
   suppliers: Supplier[];
-  userRole: string;
 }
 
 type OptimisticAction = { type: 'create'; receipt: Receipt };
@@ -52,7 +51,6 @@ export default function ReceivingClient({
   products,
   warehouses,
   suppliers,
-  userRole,
 }: Props) {
   const { showToast } = useToast();
   const [isPending, startTransition] = useTransition();
@@ -78,9 +76,8 @@ export default function ReceivingClient({
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const isAdmin = userRole === 'ADMIN';
-
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(false);
   }, []);
 

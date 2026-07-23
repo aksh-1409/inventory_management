@@ -4,8 +4,6 @@ import { prisma } from '@/lib/prisma';
 import DashboardClient from './DashboardClient';
 
 async function getData(warehouseId: string | null) {
-  const isAdmin = !warehouseId;
-
   const [products, warehouses, inventoryItems, pendingTransfers, recentTransactions] =
     await Promise.all([
       prisma.product.findMany({

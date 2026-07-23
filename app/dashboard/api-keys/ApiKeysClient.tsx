@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Key, Plus, Search, X, Loader2, Trash2, Eye, EyeOff, Copy } from 'lucide-react';
+import { Key, Plus, Search, X, Loader2, Trash2, Copy } from 'lucide-react';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { useToast } from '@/components/ui/Toast';
