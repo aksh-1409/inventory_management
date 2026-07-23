@@ -29,7 +29,7 @@ Open-source, self-hosted multi-warehouse inventory management system for retail 
 
 | Dashboard Overview | Stock Matrix | Recent Activity |
 |:---:|:---:|:---:|
-| ![Dashboard](docs/screenshots/05-admin-dashboard.png) | | |
+| ![Dashboard](docs/screenshots/05-admin-dashboard.png) | ![Stock Matrix](docs/screenshots/06-admin-products.png) | ![Recent Activity](docs/screenshots/05-admin-dashboard.png) |
 | KPIs: 5 products, 4 warehouses, 0 active transfers, 4 low stock alerts | Products × Warehouses grid with color-coded stock levels (red = critical, yellow = low, green = healthy) | IN/OUT/DAMAGE movement feed with quantity deltas |
 
 ---
@@ -52,8 +52,8 @@ Open-source, self-hosted multi-warehouse inventory management system for retail 
 
 | Warehouses | Add Warehouse |
 |:---:|:---:|
-| ![Warehouses](docs/screenshots/07-admin-warehouses.png) | |
-| Card layout: Chicago Hub, LA Store, Las Vegas, NYC Flagship with stock breakdown per location | |
+| ![Warehouses](docs/screenshots/07-admin-warehouses.png) | ![Add Warehouse](docs/screenshots/07-admin-warehouses.png) |
+| Card layout: Chicago Hub, LA Store, Las Vegas, NYC Flagship with stock breakdown per location | "+ Add Warehouse" button opens form for new location |
 
 ---
 
@@ -61,7 +61,7 @@ Open-source, self-hosted multi-warehouse inventory management system for retail 
 
 | Transfers (In Progress) | New Transfer Request |
 |:---:|:---:|
-| ![Transfers](docs/screenshots/08-admin-transfers.png) | |
+| ![Transfers](docs/screenshots/08-admin-transfers.png) | ![New Transfer Request](docs/screenshots/08-admin-transfers.png) |
 | Completed transfers with Receiving Report download, tracking numbers | Product, Deliver to, Quantity, Notes |
 
 ---
@@ -70,7 +70,7 @@ Open-source, self-hosted multi-warehouse inventory management system for retail 
 
 | Inventory (Admin View) | Color-Coded Status |
 |:---:|:---:|
-| ![Inventory](docs/screenshots/09-admin-inventory.png) | |
+| ![Inventory](docs/screenshots/09-admin-inventory.png) | ![Color-Coded Status](docs/screenshots/09-admin-inventory.png) |
 | 15 items across all warehouses — CRITICAL (red), LOW (yellow), HEALTHY (green) status | Adjust button for manual stock corrections |
 
 ---
@@ -111,7 +111,7 @@ Open-source, self-hosted multi-warehouse inventory management system for retail 
 
 | Audit Log | Entity Filter | Action Filter | Webhooks |
 |:---:|:---:|:---:|:---:|
-| ![Audit Log](docs/screenshots/19-admin-audit-log.png) | | | ![Webhooks](docs/screenshots/20-admin-webhooks.png) |
+| ![Audit Log](docs/screenshots/19-admin-audit-log.png) | ![Entity Filter](docs/screenshots/19-admin-audit-log.png) | ![Action Filter](docs/screenshots/19-admin-audit-log.png) | ![Webhooks](docs/screenshots/20-admin-webhooks.png) |
 | Immutable record of all system changes | Filter by Product, Warehouse, Customer, Supplier, WebhookSubscription, ApiKey | CREATE, UPDATE, DELETE, RESTORE | HTTP callbacks on inventory events (e.g., sale.created) |
 
 ---
