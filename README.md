@@ -273,18 +273,97 @@ Authorization: Bearer sp_live_...
 
 Create API keys at `/dashboard/api-keys` (admin only).
 
+### API Key Scopes
+
+When creating an API key, assign granular scopes to limit what the key can access. Each scope follows the `<entity>:<action>` pattern.
+
+| Scope | Description |
+| ----- | ----------- |
+| `products:read` | List and view products |
+| `products:write` | Create, update, delete, restore products |
+| `inventory:read` | List inventory items and stock levels |
+| `inventory:write` | Adjust stock quantities |
+| `transfers:read` | List and view transfers |
+| `transfers:write` | Create, accept, ship, receive transfers |
+| `sales:read` | List and view sales |
+| `sales:write` | Record new sales |
+| `warehouses:read` | List and view warehouses |
+
+**Rules:**
+- Session users (browser login) bypass scope checks — full access based on role.
+- API key users are strictly enforced — only the assigned scopes are granted.
+- ADMIN role bypasses all scope restrictions.
+- Operators are additionally restricted to their assigned warehouse for sales, receives, and transfers.
+
+### Webhooks
+
+Receive HTTP callbacks when inventory events occur. Configure webhook subscriptions at `/dashboard/settings`.
+
+**Available events:**
+
+| Event | Trigger |
+| ----- | ------- |
+| `sale.created` | A sale is recorded |
+| `transfer.completed` | A transfer is received at destination |
+| `stock.low` | Stock falls below reorder point |
+
+**Webhook payload:**
+
+```json
+{
+  "event": "sale.created",
+  "timestamp": "2026-07-24T00:00:00.000Z",
+  "data": { ... }
+}
+```
+
+**Features:**
+- Optional secret for HMAC signature verification
+- Active/inactive toggle
+- Test button to send a ping to your endpoint
+- Automatic retry on failure
+
 ### Available Endpoints
 
-| Method | Endpoint             | Description                        |
-| ------ | -------------------- | ---------------------------------- |
-| GET    | `/api/v1/products`   | List products                      |
-| POST   | `/api/v1/products`   | Create product (admin)             |
-| GET    | `/api/v1/warehouses` | List warehouses (no auth required) |
-| GET    | `/api/v1/inventory`  | List inventory items               |
-| POST   | `/api/v1/sales`      | Record a sale                      |
-| POST   | `/api/v1/receive`    | Receive stock                      |
-| GET    | `/api/v1/transfers`  | List transfers                     |
-| POST   | `/api/v1/transfers`  | Create transfer request            |
+| Method | Endpoint | Auth | Description |
+| ------ | -------- | ---- | ----------- |
+| GET | `/api/v1/products` | Session/api-key | List products (search, pagination, `?export=csv\|pdf`) |
+| GET | `/api/v1/products/:id` | Session/api-key | Get single product with inventory |
+| POST | `/api/v1/products` | `products:write` + ADMIN | Create product |
+| PATCH | `/api/v1/products/:id` | `products:write` + ADMIN | Update product |
+| DELETE | `/api/v1/products/:id` | `products:write` + ADMIN | Soft-delete product |
+| POST | `/api/v1/products/:id/restore` | `products:write` | Restore soft-deleted product |
+| POST | `/api/v1/products/bulk-delete` | `products:write` + ADMIN | Soft-delete multiple products |
+| GET | `/api/v1/customers` | Session/api-key | List customers |
+| POST | `/api/v1/customers` | `customers:write` | Create customer |
+| PATCH | `/api/v1/customers/:id` | `customers:write` + ADMIN | Update customer |
+| DELETE | `/api/v1/customers/:id` | `customers:write` + ADMIN | Soft-delete customer |
+| GET | `/api/v1/suppliers` | Session/api-key | List suppliers |
+| POST | `/api/v1/suppliers` | `suppliers:write` | Create supplier |
+| PATCH | `/api/v1/suppliers/:id` | `suppliers:write` + ADMIN | Update supplier |
+| DELETE | `/api/v1/suppliers/:id` | `suppliers:write` + ADMIN | Soft-delete supplier |
+| GET | `/api/v1/warehouses` | None (public) | List warehouses |
+| POST | `/api/v1/warehouses` | `warehouses:write` | Create warehouse |
+| PATCH | `/api/v1/warehouses/:id` | `warehouses:write` + ADMIN | Update warehouse |
+| DELETE | `/api/v1/warehouses/:id` | `warehouses:write` + ADMIN | Soft-delete warehouse |
+| GET | `/api/v1/inventory` | Session/api-key | List inventory items |
+| POST | `/api/v1/inventory` | `inventory:write` + ADMIN | Adjust stock |
+| POST | `/api/v1/sales` | `sales:write` | Record sale |
+| POST | `/api/v1/receive` | `receive:write` | Receive stock from supplier |
+| GET | `/api/v1/transfers` | Session/api-key | List transfers |
+| POST | `/api/v1/transfers` | `transfers:write` | Create transfer request |
+| POST | `/api/v1/transfers/:id/accept` | `transfers:write` | Accept transfer |
+| POST | `/api/v1/transfers/:id/ship` | `transfers:write` | Ship transfer |
+| POST | `/api/v1/transfers/:id/receive` | `transfers:write` | Receive transfer |
+| GET | `/api/v1/api-keys` | `api-keys:read` | List own API keys |
+| POST | `/api/v1/api-keys` | `api-keys:write` | Create API key |
+| DELETE | `/api/v1/api-keys/:id` | `api-keys:write` | Revoke API key |
+| GET | `/api/v1/audit-logs` | ADMIN | List audit logs |
+| GET | `/api/v1/webhooks` | `webhooks:read` | List webhook subscriptions |
+| POST | `/api/v1/webhooks` | `webhooks:write` | Create webhook subscription |
+| DELETE | `/api/v1/webhooks/:id` | `webhooks:write` | Delete webhook subscription |
+| POST | `/api/v1/webhooks/:id/test` | `webhooks:write` | Send test ping |
+| DELETE | `/api/v1/users/:id` | `users:write` + ADMIN | Delete operator |
 
 ## License
 
