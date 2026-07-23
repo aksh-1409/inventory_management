@@ -3,7 +3,8 @@ import { PrismaClient } from '@/lib/generated/prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 
-const TEST_DB_URL = process.env.TEST_DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/stockpilot_test';
+const TEST_DB_URL =
+  process.env.TEST_DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/stockpilot_test';
 
 let prisma: PrismaClient;
 

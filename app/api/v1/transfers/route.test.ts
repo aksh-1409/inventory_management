@@ -1,7 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { NextRequest } from 'next/server';
 
-const mocks = vi.hoisted(() => ({ requireAuth: vi.fn(), findMany: vi.fn(), count: vi.fn(), create: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+  requireAuth: vi.fn(),
+  findMany: vi.fn(),
+  count: vi.fn(),
+  create: vi.fn(),
+}));
 vi.mock('@/lib/api-auth', () => ({
   requireAuth: mocks.requireAuth,
   hasScope: vi.fn().mockReturnValue(true),
