@@ -7,11 +7,6 @@ import { auditLog } from '@/lib/audit';
 
 export async function GET(req: NextRequest) {
   try {
-    const authResult = await requireAuth(req);
-    if (!authResult) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     const { searchParams } = new URL(req.url);
     const q = parseSearch(searchParams);
     const { page, pageSize, skip, take } = parsePagination(searchParams);

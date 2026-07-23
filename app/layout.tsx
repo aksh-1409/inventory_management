@@ -16,7 +16,22 @@ export const metadata: Metadata = {
     'A control tower for physical goods — showing exactly what is where, alerting when stock runs low, and orchestrating safe, atomic transfers between locations.',
   keywords: ['inventory management', 'warehouse', 'stock control', 'retail', 'supply chain'],
   authors: [{ name: 'Urban Sole' }],
-  robots: 'noindex, nofollow', // Keep private for demo
+  robots: 'index, follow',
+  openGraph: {
+    title: 'StockPilot — Multi-Warehouse Inventory Management',
+    description:
+      'A control tower for physical goods — showing exactly what is where, alerting when stock runs low, and orchestrating safe, atomic transfers between locations.',
+    type: 'website',
+    siteName: 'StockPilot',
+    images: [{ url: '/favicon.ico', width: 32, height: 32 }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'StockPilot — Multi-Warehouse Inventory Management',
+    description:
+      'A control tower for physical goods — showing exactly what is where, alerting when stock runs low, and orchestrating safe, atomic transfers between locations.',
+    images: [{ url: '/favicon.ico', width: 32, height: 32 }],
+  },
 };
 
 export default function RootLayout({

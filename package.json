@@ -2,6 +2,11 @@
   "name": "stockpilot",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aksh-1409/inventory_management.git"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",

@@ -106,10 +106,8 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    console.log('[TRANSFER_POST_BODY]', JSON.stringify(body));
     const result = transferRequestSchema.safeParse(body);
     if (!result.success) {
-      console.log('[TRANSFER_POST_ERROR]', JSON.stringify(result.error.issues));
       return NextResponse.json({ error: result.error.issues[0].message }, { status: 400 });
     }
 

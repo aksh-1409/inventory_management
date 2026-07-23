@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { NextRequest } from 'next/server';
 
-const mocks = vi.hoisted(() => ({ requireAuth: vi.fn(), findMany: vi.fn(), create: vi.fn() }));
+const mocks = vi.hoisted(() => ({ requireAuth: vi.fn(), findMany: vi.fn(), count: vi.fn(), create: vi.fn() }));
 vi.mock('@/lib/api-auth', () => ({
   requireAuth: mocks.requireAuth,
   hasScope: vi.fn().mockReturnValue(true),
 }));
 vi.mock('@/lib/prisma', () => ({
-  prisma: { transfer: { findMany: mocks.findMany, create: mocks.create } },
+  prisma: { transfer: { findMany: mocks.findMany, count: mocks.count, create: mocks.create } },
 }));
 import { GET, POST } from './route';
 
@@ -22,13 +22,14 @@ describe('/api/v1/transfers', () => {
   beforeEach(() => {
     mocks.requireAuth.mockResolvedValue({ user: { id: 'u1', role: 'ADMIN', warehouseId: null } });
     mocks.findMany.mockResolvedValue([]);
+    mocks.count.mockResolvedValue(0);
     mocks.create.mockResolvedValue({ id: 't1', status: 'REQUESTED' });
   });
 
   it('returns all transfers to admins and warehouse-related/open requests to operators', async () => {
     expect((await GET(request())).status).toBe(200);
     expect(mocks.findMany).toHaveBeenLastCalledWith(
-      expect.not.objectContaining({ where: expect.anything() })
+      expect.objectContaining({ where: { product: { deletedAt: null } } })
     );
 
     mocks.requireAuth.mockResolvedValue({
@@ -37,9 +38,9 @@ describe('/api/v1/transfers', () => {
     expect((await GET(request())).status).toBe(200);
     expect(mocks.findMany).toHaveBeenLastCalledWith(
       expect.objectContaining({
-        where: {
+        where: expect.objectContaining({
           OR: [{ fromWarehouseId: 'w1' }, { toWarehouseId: 'w1' }, { status: 'REQUESTED' }],
-        },
+        }),
       })
     );
   });

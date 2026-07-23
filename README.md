@@ -2,6 +2,8 @@
 
 Open-source, self-hosted multi-warehouse inventory management system for retail chains.
 
+> **Live demo:** Deploy your own instance via Docker or Render (see instructions below).
+
 ## Features
 
 - **Multi-Warehouse** — Track stock across all locations with a real-time products × warehouses matrix
@@ -12,17 +14,136 @@ Open-source, self-hosted multi-warehouse inventory management system for retail 
 - **Dark-Mode UI** — Resend/Linear aesthetic, responsive design
 - **Self-Hosted** — Your data stays on your server. Docker and Render ready
 
+## Screenshots
+
+### Public Pages
+
+| Landing Page | Features | Login | Signup |
+|:---:|:---:|:---:|:---:|
+| ![Landing](docs/screenshots/01-landing-hero.png) | ![Features](docs/screenshots/02-landing-features.png) | ![Login](docs/screenshots/03-login.png) | ![Signup](docs/screenshots/04-signup.png) |
+| Hero with "Open Source · Self-Hosted" badge and CTA | Six feature cards: Multi-Warehouse, Transfer Workflow, Dashboard & Reports, Role-Based Access, REST API, Self-Hosted | Quick demo buttons (Sarah Admin, Mike Operator), email/password, Google & GitHub OAuth | Operator registration with warehouse selection |
+
+---
+
+### Admin Dashboard (Sarah — Admin role)
+
+| Dashboard Overview | Stock Matrix | Recent Activity |
+|:---:|:---:|:---:|
+| ![Dashboard](docs/screenshots/05-admin-dashboard.png) | | |
+| KPIs: 5 products, 4 warehouses, 0 active transfers, 4 low stock alerts | Products × Warehouses grid with color-coded stock levels (red = critical, yellow = low, green = healthy) | IN/OUT/DAMAGE movement feed with quantity deltas |
+
+---
+
+### Product Management
+
+| Products List | Export Dropdown | Add Product |
+|:---:|:---:|:---:|
+| ![Products](docs/screenshots/06-admin-products.png) | ![Export](docs/screenshots/12-admin-export-dropdown.png) | ![Add Product](docs/screenshots/13-admin-add-product.png) |
+| Inventory matrix with per-warehouse stock, edit/delete actions, search, bulk select | CSV and PDF export options | SKU, Name, Description, Price, Cost, Reorder Point, Category |
+
+| Products Report (PDF) | CSV Export (Excel) |
+|:---:|:---:|
+| ![PDF Report](docs/screenshots/22-products-report-pdf.png) | ![CSV Export](docs/screenshots/24-csv-export-excel.png) |
+| Generated report with Name, SKU, Category, Price, Cost, Reorder | Spreadsheet export opened in Excel |
+
+---
+
+### Warehouse Management
+
+| Warehouses | Add Warehouse |
+|:---:|:---:|
+| ![Warehouses](docs/screenshots/07-admin-warehouses.png) | |
+| Card layout: Chicago Hub, LA Store, Las Vegas, NYC Flagship with stock breakdown per location | |
+
+---
+
+### Transfer Workflow
+
+| Transfers (In Progress) | New Transfer Request |
+|:---:|:---:|
+| ![Transfers](docs/screenshots/08-admin-transfers.png) | |
+| Completed transfers with Receiving Report download, tracking numbers | Product, Deliver to, Quantity, Notes |
+
+---
+
+### Inventory Tracking
+
+| Inventory (Admin View) | Color-Coded Status |
+|:---:|:---:|
+| ![Inventory](docs/screenshots/09-admin-inventory.png) | |
+| 15 items across all warehouses — CRITICAL (red), LOW (yellow), HEALTHY (green) status | Adjust button for manual stock corrections |
+
+---
+
+### Sales & Receiving
+
+| Sales List | Record Sale | Receiving |
+|:---:|:---:|:---:|
+| ![Sales](docs/screenshots/10-admin-sales.png) | ![Record Sale](docs/screenshots/14-admin-record-sale.png) | ![Receiving](docs/screenshots/11-admin-receiving.png) |
+| Product, SKU, Warehouse, Qty, Date, Reference, Invoice download | Customer phone auto-lookup, product/warehouse select, quantity & price | 16 received shipments with Receiving Report PDF downloads |
+
+| Receiving Report (PDF) |
+|:---:|
+| ![Receiving Report](docs/screenshots/23-receiving-report-pdf.png) |
+| Purchase order receipt: supplier, shipment details, line items, ordered vs received, damaged write-off |
+
+---
+
+### Customers & Suppliers
+
+| Customers | Suppliers |
+|:---:|:---:|
+| ![Customers](docs/screenshots/15-admin-customers.png) | ![Suppliers](docs/screenshots/16-admin-suppliers.png) |
+| Name, Phone, Email with search and bulk select | Contact cards with email and phone |
+
+---
+
+### User Management & Access Control
+
+| Users | API Keys | Profile |
+|:---:|:---:|:---:|
+| ![Users](docs/screenshots/17-admin-users.png) | ![API Keys](docs/screenshots/18-admin-api-keys.png) | ![Profile](docs/screenshots/21-admin-profile.png) |
+| 14 users, password reset approvals, role/warehouse assignments, admin-only delete | Programmatic access tokens with scoped permissions (products:read, inventory:write, etc.) | Account info, role badge, change password |
+
+---
+
+### Audit Log & Webhooks
+
+| Audit Log | Entity Filter | Action Filter | Webhooks |
+|:---:|:---:|:---:|:---:|
+| ![Audit Log](docs/screenshots/19-admin-audit-log.png) | | | ![Webhooks](docs/screenshots/20-admin-webhooks.png) |
+| Immutable record of all system changes | Filter by Product, Warehouse, Customer, Supplier, WebhookSubscription, ApiKey | CREATE, UPDATE, DELETE, RESTORE | HTTP callbacks on inventory events (e.g., sale.created) |
+
+---
+
+### Operator View (Mike — Operator role, LA Store)
+
+| Login | Dashboard | Products (Read-Only) |
+|:---:|:---:|:---:|
+| ![Operator Login](docs/screenshots/25-operator-login.png) | ![Operator Dashboard](docs/screenshots/26-operator-dashboard.png) | ![Operator Products](docs/screenshots/27-operator-products.png) |
+| Mike (Operator) quick demo selected | Scoped to LA Store: 4 products, 1 warehouse, 0 alerts | Full product list with export only — no Add/Edit/Delete |
+
+| Transfers | Inventory (LA Store Only) | Sales |
+|:---:|:---:|:---:|
+| ![Operator Transfers](docs/screenshots/28-operator-transfers.png) | ![Operator Inventory](docs/screenshots/29-operator-inventory.png) | ![Operator Sales](docs/screenshots/30-operator-sales.png) |
+| New request with "Deliver to: LA Store" pre-filled | 4 items scoped to LA Store, all LOW status | Record sale with customer phone lookup |
+
+| Receiving |
+|:---:|
+| ![Operator Receiving](docs/screenshots/31-operator-receiving.png) |
+| 4 received shipments with Receiving Report PDF downloads |
+
 ## Tech Stack
 
-| Layer     | Technology                       |
-| --------- | -------------------------------- |
-| Framework | Next.js 16 (App Router)          |
-| Language  | TypeScript (strict)              |
-| ORM       | Prisma 7                         |
-| Database  | PostgreSQL                       |
-| Auth      | NextAuth v5 (Credentials + JWT)  |
-| UI        | Tailwind CSS + custom components |
-| PDF       | @react-pdf/renderer              |
+| Layer     | Technology                        |
+| --------- | --------------------------------- |
+| Framework | Next.js (App Router)              |
+| Language  | TypeScript (strict)               |
+| ORM       | Prisma                            |
+| Database  | PostgreSQL                        |
+| Auth      | NextAuth v5 (Credentials + JWT)   |
+| UI        | CSS variables + custom components |
+| PDF       | @react-pdf/renderer               |
 
 ## Quick Start
 
@@ -79,11 +200,11 @@ Open [http://localhost:3000](http://localhost:3000)
 
 ## Demo Credentials
 
-| Email               | Password    | Role     | Warehouse |
-| ------------------- | ----------- | -------- | --------- |
-| sarah@urbansole.com | password123 | Admin    | All       |
-| demo@demo.com       | password123 | Admin    | All       |
-| mike@urbansole.com  | password123 | Operator | LA Store  |
+| Email               | Password | Role     | Warehouse |
+| ------------------- | -------- | -------- | --------- |
+| sarah@urbansole.com | demo1234 | Admin    | All       |
+| demo@demo.com       | demo1234 | Admin    | All       |
+| mike@urbansole.com  | demo1234 | Operator | LA Store  |
 
 ## Docker
 
@@ -154,16 +275,16 @@ Create API keys at `/dashboard/api-keys` (admin only).
 
 ### Available Endpoints
 
-| Method | Endpoint             | Description              |
-| ------ | -------------------- | ------------------------ |
-| GET    | `/api/v1/products`   | List products            |
-| POST   | `/api/v1/products`   | Create product (admin)   |
-| GET    | `/api/v1/warehouses` | List warehouses (public) |
-| GET    | `/api/v1/inventory`  | List inventory items     |
-| POST   | `/api/v1/sales`      | Record a sale            |
-| POST   | `/api/v1/receive`    | Receive stock            |
-| GET    | `/api/v1/transfers`  | List transfers           |
-| POST   | `/api/v1/transfers`  | Create transfer request  |
+| Method | Endpoint             | Description                        |
+| ------ | -------------------- | ---------------------------------- |
+| GET    | `/api/v1/products`   | List products                      |
+| POST   | `/api/v1/products`   | Create product (admin)             |
+| GET    | `/api/v1/warehouses` | List warehouses (no auth required) |
+| GET    | `/api/v1/inventory`  | List inventory items               |
+| POST   | `/api/v1/sales`      | Record a sale                      |
+| POST   | `/api/v1/receive`    | Receive stock                      |
+| GET    | `/api/v1/transfers`  | List transfers                     |
+| POST   | `/api/v1/transfers`  | Create transfer request            |
 
 ## License
 

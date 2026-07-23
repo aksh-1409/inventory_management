@@ -38,7 +38,6 @@ export async function POST(req: NextRequest) {
 
     const token = await createVerificationToken(email);
     const verifyUrl = `${req.nextUrl.origin}/api/auth/verify?token=${token}`;
-    console.log(`[VERIFICATION] ${verifyUrl}`);
 
     return NextResponse.json({ message: 'Verification email sent.', devUrl: verifyUrl });
   } catch (error) {

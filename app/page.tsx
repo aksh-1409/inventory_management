@@ -120,7 +120,7 @@ export default function LandingPage() {
               Start free <ArrowRightLeft style={{ width: 16, height: 16 }} />
             </Link>
             <a
-              href="https://github.com/aksh-1409/inventory_manage"
+              href="https://github.com/aksh-1409/inventory_management"
               target="_blank"
               rel="noopener noreferrer"
               style={{
