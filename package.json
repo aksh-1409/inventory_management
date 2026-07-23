@@ -8,6 +8,7 @@
     "url": "git+https://github.com/aksh-1409/inventory_management.git"
   },
   "scripts": {
+    "postinstall": "prisma generate",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",

@@ -217,7 +217,30 @@ docker run -p 3000:3000 \
   stockpilot
 ```
 
-## Deploy to Render
+## Deploy to Vercel + Neon
+
+### 1. Set up Neon (PostgreSQL)
+
+1. Create a free account at [neon.tech](https://neon.tech)
+2. Create a new project and copy the connection string
+3. Run migrations to create tables:
+   ```bash
+   npx prisma generate
+   DATABASE_URL="postgresql://..." npx prisma db push
+   DATABASE_URL="postgresql://..." npx tsx prisma/seed.ts
+   ```
+
+### 2. Deploy to Vercel
+
+1. Push your repo to GitHub
+2. Go to [vercel.com](https://vercel.com) and import your GitHub repository
+3. Add these environment variables in Vercel project settings:
+   - `DATABASE_URL` — your Neon connection string
+   - `NEXTAUTH_SECRET` — run `openssl rand -base64 32` to generate
+   - `NEXTAUTH_URL` — your Vercel domain (e.g., `https://your-app.vercel.app`)
+4. Deploy — Vercel detects Next.js automatically
+
+### Deploy to Render
 
 1. Fork this repo
 2. Create a new PostgreSQL database on Render
